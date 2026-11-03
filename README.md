@@ -11,7 +11,7 @@ Analysis code for *Short-Duration Spaceflight Alters Cellular Transport Pathways
 
 ## Inputs (not stored here)
 - GeneLab processed differential-expression, VST and QC tables and ISA metadata: https://osdr.nasa.gov/bio/repo/data/studies/OSD-352, OSD-562, OSD-564
-- RSEM per-sample gene files for OSD-562 (`GLDS-557_rna_seq_<sample>.genes.tsv`) and GENCODE vM37 GTF (for rRNA removal)
+- OSD-562 counts: `GLDS-557_rna_seq_RSEM_Unnormalized_Counts_rRNArm_GLbulkRNAseq.csv` from OSDR (place in `OSD-562/GeneLab_counts_download/`); `rerun_deseq2_OSD562.py --source star` alternatively rebuilds the matrix from the per-sample RSEM files plus the GENCODE vM37 GTF, giving identical counts
 - Spatial object `RR3-brain_ST_final_object.rds`: Mendeley Data doi 10.17632/fjxrcbh672.1 (Masarapu et al. 2024, Nat Commun 15:4778); DE statistics from its Supplementary Data 8
 
 ## Environment
