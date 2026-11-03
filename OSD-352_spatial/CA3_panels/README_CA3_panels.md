@@ -157,3 +157,6 @@ log-expression over CA3 (cluster 8) spots, both sections per animal; bar, group 
 CDR-adjusted = residuals from expression ~ cellular detection rate fitted across all CA3 spots;
 descriptive only. Statistics (coef, FDR) are from the spot-level MAST mixed model of Masarapu
 et al."
+
+## Main-text maps in the original layout (`plot_whole_section_maps.py`)
+`Fig2c_*_maps.png/.pdf`, `Fig3c_*_maps.png/.pdf`, `Fig4c_*_maps.png/.pdf` reproduce the layout of the original `<gene>_spatial_combined` figures (gene columns; Spaceflight | Ground control; three sections each; one Low/High colour bar) with two corrections: colour is rescaled within each section (0 to the section's 99th percentile of SCT log-normalised expression) and the CA3 boundary (cluster-8 spots adjacent to a non-cluster-8 spot) is outlined in black. Sections are one per animal in the fixed order F1 (CF1, 159_C1), F2 (CF2, 158_A1), F3 (CF7, 158_C1) and G1 (CG7, 159_B1), G2 (CG8, 304_C1), G3 (CG9, 304_A1). Use these for the main text; the three-row `*_CA3.png` panels and `*_raw_means.png` go to the supplement.
