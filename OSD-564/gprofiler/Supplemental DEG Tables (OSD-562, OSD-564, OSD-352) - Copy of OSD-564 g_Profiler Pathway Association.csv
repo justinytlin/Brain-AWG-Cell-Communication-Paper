@@ -1,0 +1,74 @@
+OSD-564 g:Profiler Pathway Association,,
+,,
+Category,Pathway,Regulation
+F-actin/TNTs,actin filament-based process,Upregulated
+F-actin/TNTs,actin cytoskeleton organization,Upregulated
+F-actin/TNTs,actin filament organization,Upregulated
+F-actin/TNTs,cytoskeleton organization,Upregulated
+F-actin/TNTs,cytoskeleton,Upregulated
+F-actin/TNTs,cell projection organization,Upregulated
+F-actin/TNTs,plasma membrane bounded cell projection organization,Upregulated
+F-actin/TNTs,cell projection,Upregulated
+F-actin/TNTs,plasma membrane bounded cell projection,Upregulated
+F-actin/TNTs,small GTPase binding / GTPase binding / small GTPase binding (Rho/Rac/Cdc42 regulate F-actin),Upregulated
+F-actin/TNTs,membrane fusion (often actin-coupled),Upregulated
+F-actin/TNTs,intracellular transport (actin-based transport),Upregulated
+F-actin/TNTs,translation at presynapse,Downregulated
+F-actin/TNTs,translation at synapse,Downregulated
+F-actin/TNTs,translation at postsynapse,Downregulated
+F-actin/TNTs,presynapse,Downregulated
+F-actin/TNTs,postsynapse,Downregulated
+F-actin/TNTs,synapse,Downregulated
+F-actin/TNTs,organelle organization,Downregulated
+F-actin/TNTs,intracellular membrane-bounded organelle,Downregulated
+F-actin/TNTs,intracellular membraneless organelle,Downregulated
+F-actin/TNTs,protein-containing complex,Downregulated
+F-actin/TNTs,regulation of translation,Downregulated
+F-actin/TNTs,plasma membrane bounded cell projection / organization (TNTs are membrane-bounded projections),Upregulated
+F-actin/TNTs,cell projection / organization,Upregulated
+F-actin/TNTs,cell-cell signaling; signal release; intercellular transport (hallmarks of TNT function),Upregulated
+F-actin/TNTs,intracellular signal transduction / regulation of intracellular signal transduction (TNT-mediated signaling),Upregulated
+F-actin/TNTs,membrane raft / membrane microdomain (lipid-raft enrichment reported in TNTs),Upregulated
+F-actin/TNTs,cytoskeleton / cytoskeleton organization; actin filament-based process (TNTs are F-actin rich),Upregulated
+F-actin/TNTs,organelle localization / transport (TNT cargo transfer),Upregulated
+F-actin/TNTs,synapse / trans-synaptic signaling (functional analogy; used in some TNT literature),Upregulated
+F-actin/TNTs,translation at presynapse,Downregulated
+F-actin/TNTs,translation at synapse,Downregulated
+F-actin/TNTs,translation at postsynapse,Downregulated
+F-actin/TNTs,presynapse,Downregulated
+F-actin/TNTs,postsynapse,Downregulated
+F-actin/TNTs,synapse,Downregulated
+F-actin/TNTs,organelle organization,Downregulated
+F-actin/TNTs,intracellular membrane-bounded organelle,Downregulated
+F-actin/TNTs,intracellular membraneless organelle,Downregulated
+F-actin/TNTs,protein-containing complex,Downregulated
+F-actin/TNTs,regulation of translation,Downregulated
+Docking proteins/EVs,protein-macromolecule adaptor activity (canonical docking/adaptor role),Upregulated
+Docking proteins/EVs,intracellular signal transduction; regulation of signal transduction,Upregulated
+Docking proteins/EVs,protein kinase binding / kinase binding / protein binding (typical interactions of docking proteins),Upregulated
+Docking proteins/EVs,Insulin signaling / Insulin signaling pathway,Upregulated
+Docking proteins/EVs,PKA activation in glucagon signalling / CREB1 phosphorylation via adenylate cyclase (classic adaptor-mediated kinase cascades),Upregulated
+Docking proteins/EVs,protein localization to plasma membrane / protein localization to membrane (adaptor-guided recruitment),Upregulated
+Docking proteins/EVs,translation at presynapse,Downregulated
+Docking proteins/EVs,translation at synapse,Downregulated
+Docking proteins/EVs,translation at postsynapse,Downregulated
+Docking proteins/EVs,presynapse,Downregulated
+Docking proteins/EVs,postsynapse,Downregulated
+Docking proteins/EVs,synapse,Downregulated
+Docking proteins/EVs,organelle organization,Downregulated
+Docking proteins/EVs,intracellular membrane-bounded organelle,Downregulated
+Docking proteins/EVs,protein-containing complex,Downregulated
+Docking proteins/EVs,regulation of translation,Downregulated
+Docking proteins/EVs,extracellular organelle,Upregulated
+Docking proteins/EVs,vesicle-mediated transport,Upregulated
+Docking proteins/EVs,secretion / secretion by cell / regulated secretion / protein secretion / peptide secretion / hormone secretion,Upregulated
+Docking proteins/EVs,vesicle organization / vesicle localization / transport vesicle / coated vesicle / secretory vesicle,Upregulated
+Docking proteins/EVs,Golgi vesicle transport / Golgi apparatus / Golgi membrane / Golgi stack,Upregulated
+Docking proteins/EVs,plasma membrane / basolateral plasma membrane / plasma membrane region (microvesicle shedding sites),Upregulated
+Docking proteins/EVs,presynapse,Downregulated
+Docking proteins/EVs,postsynapse,Downregulated
+Docking proteins/EVs,synapse,Downregulated
+Docking proteins/EVs,organelle organization,Downregulated
+Docking proteins/EVs,intracellular membrane-bounded organelle,Downregulated
+Docking proteins/EVs,protein-containing complex,Downregulated
+Docking proteins/EVs,cellular process,Downregulated

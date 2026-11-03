@@ -1,0 +1,12 @@
+# large inputs are downloaded from NASA OSDR / Mendeley, not stored here
+*.png
+*.pdf
+*.rds
+*.gtf
+*.xlsx
+GLDS-*_rna_seq_*.csv
+*_VST_Counts*.csv
+GSEA_prerank/
+_old*/
+__pycache__/
+.DS_Store
