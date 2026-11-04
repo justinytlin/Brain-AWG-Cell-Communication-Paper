@@ -1,13 +1,17 @@
 """
-KEGG GSEA NES panels for OSD-564 (harmonized term sets shared with OSD-562).
+KEGG GSEA NES panels for OSD-564 (harmonized term sets and term ORDER shared with
+OSD-562 and OSD-352; drawn by the shared srep_nes_panel.nes_panel).
 
-Panels
+Panels (first term at the top)
   sEV        (7): Sphingolipid signaling pathway; Sphingolipid metabolism;
                   Phospholipase D signaling pathway; Endocytosis; Synaptic vesicle
                   cycle; Phosphatidylinositol signaling system; Lysosome
   TNT        (3): Axon guidance; Regulation of actin cytoskeleton; Rap1 signaling pathway
   Metabolic  (3): AMPK signaling pathway; Glycolysis / Gluconeogenesis;
                   Oxidative phosphorylation   (supplementary)
+
+NES / FDR come from KEGG_results/GSEA_KEGG_results.csv (no GSEA re-run).
+xlim (-2.2, 2.2) for sEV / TNT and (-3.2, 3.2) for the metabolic panel.
 
 The former "Abeta / Tau" panel (mis-titled OSD-562) was dropped: it belonged to an
 abandoned framing of the manuscript.
@@ -18,8 +22,11 @@ Also writes KEGG_results/pathway_figures/KEGG_leading_edge_genes.xlsx for the
 import os
 import warnings
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
+import srep_style as srep; srep.apply()
 
-from osd564_nes_panel import plot_nes_panel
+from srep_nes_panel import nes_panel, XLIM
 
 warnings.filterwarnings('ignore')
 
@@ -37,8 +44,9 @@ GROUPS = {
             "Phosphatidylinositol signaling system",
             "Lysosome",
         ],
-        'panel':    'KEGG GSEA, sEV-related pathways',
-        'filename': 'GSEA_sEV_pathways_NES.png',
+        'title':    'KEGG sEV pathways, OSD-564 (n = 5 vs 5)',
+        'xlim':     XLIM['sEV'],
+        'filename': 'GSEA_sEV_pathways_NES',
     },
     'TNT': {
         'pathways': [
@@ -46,8 +54,9 @@ GROUPS = {
             "Regulation of actin cytoskeleton",
             "Rap1 signaling pathway",
         ],
-        'panel':    'KEGG GSEA, TNT-related pathways',
-        'filename': 'GSEA_TNT_pathways_NES.png',
+        'title':    'KEGG TNT pathways, OSD-564 (n = 5 vs 5)',
+        'xlim':     XLIM['TNT'],
+        'filename': 'GSEA_TNT_pathways_NES',
     },
     'Metabolic_adaptation': {
         'pathways': [
@@ -55,8 +64,9 @@ GROUPS = {
             "Glycolysis / Gluconeogenesis",
             "Oxidative phosphorylation",
         ],
-        'panel':    'KEGG GSEA, metabolic adaptation pathways (supplementary)',
-        'filename': 'GSEA_metabolic_adaptation_pathways_NES.png',
+        'title':    'KEGG metabolic adaptation, OSD-564 (n = 5 vs 5)',
+        'xlim':     XLIM['metabolic'],
+        'filename': 'GSEA_metabolic_adaptation_pathways_NES',
     },
 }
 
@@ -103,14 +113,14 @@ plot_df = (pd.DataFrame(records)
 print(f"  {len(plot_df)} pathways loaded.")
 
 # ──────────────────────────────────────────────────────────────────
-# 2. Grouped NES panels
+# 2. Grouped NES panels (harmonized order, first term at the top)
 # ──────────────────────────────────────────────────────────────────
 print("\nCreating grouped NES figures ...")
+by_label = {r['label']: r for r in records}
 for group_key, cfg in GROUPS.items():
-    sub = plot_df[plot_df['label'].isin(cfg['pathways'])]
-    recs = sub[['label', 'NES', 'FDR']].to_dict('records')
-    out_path = f"{OUT_DIR}/{cfg['filename']}"
-    plot_nes_panel(recs, cfg['panel'], out_path)
+    terms = [{'label': p, 'nes': by_label[p]['NES'], 'fdr': by_label[p]['FDR']}
+             for p in cfg['pathways'] if p in by_label]
+    nes_panel(terms, cfg['title'], f"{OUT_DIR}/{cfg['filename']}", xlim=cfg['xlim'])
 
 # ──────────────────────────────────────────────────────────────────
 # 3. Leading edge genes — Excel file

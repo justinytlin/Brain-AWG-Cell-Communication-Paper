@@ -11,3 +11,5 @@ _old*/
 __pycache__/
 .DS_Store
 GeneLab_counts_download/
+!Figures_SciRep/
+!Figures_SciRep/*.png

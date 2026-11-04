@@ -18,10 +18,17 @@ Supplementary harmonized panels (shared with OSD-562):
 import os
 import warnings
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
+import srep_style as srep; srep.apply()
 
-from osd564_nes_panel import plot_nes_panel
+from srep_nes_panel import nes_panel, XLIM_DEFAULT
 
 warnings.filterwarnings('ignore')
+
+# every panel in this script shares the (-3.2, 3.2) axis of the mitochondrial /
+# metabolic panels (the CC panel holds Ribosome at NES = -2.27)
+TITLE_XLIM = XLIM_DEFAULT
 
 OUT_DIR = 'GO_results'
 CSV = {
@@ -50,7 +57,7 @@ THEMES = [
     {
         'key':   'TNT_Factin',
         'ont':   'MF',
-        'panel': 'GO MF GSEA, tunneling nanotube / F-actin terms',
+        'title': 'GO MF TNT / F-actin terms, OSD-564 (n = 5 vs 5)',
         'go_ids': [
             'GO:0003779',   # Actin Binding
             'GO:0003785',   # Actin Monomer Binding
@@ -68,7 +75,7 @@ THEMES = [
     {
         'key':   'Extracellular_Vesicles',
         'ont':   'MF',
-        'panel': 'GO MF GSEA, extracellular vesicle terms',
+        'title': 'GO MF extracellular vesicle terms, OSD-564 (n = 5 vs 5)',
         'go_ids': [
             'GO:0035615',   # Clathrin-cargo Adaptor Activity
             'GO:0019905',   # Syntaxin Binding
@@ -86,7 +93,7 @@ THEMES = [
     {
         'key':   'Amyloid_Tau',
         'ont':   'MF',
-        'panel': 'GO MF GSEA, amyloid-β / tau terms (legacy)',
+        'title': 'GO MF amyloid-β / tau terms, OSD-564 (n = 5 vs 5)',
         'go_ids': [
             'GO:0048156',   # Tau Protein Binding
             'GO:0050321',   # Tau-protein Kinase Activity
@@ -104,7 +111,7 @@ THEMES = [
     {
         'key':   'BP_protrusion_exocytosis',
         'ont':   'BP',
-        'panel': 'GO BP GSEA, protrusion and exocytosis terms (supplementary)',
+        'title': 'GO BP protrusion and exocytosis terms, OSD-564 (n = 5 vs 5)',
         'names': [
             'Actin Filament Organization',
             'Axonogenesis',
@@ -118,7 +125,7 @@ THEMES = [
     {
         'key':   'CC_compartments',
         'ont':   'CC',
-        'panel': 'GO CC GSEA, vesicle, mitochondrial and ribosomal compartments (supplementary)',
+        'title': 'GO CC compartment terms, OSD-564 (n = 5 vs 5)',
         'names': [
             'Recycling Endosome Membrane',
             'Endocytic Vesicle',
@@ -159,12 +166,13 @@ for theme in THEMES:
             continue
         records.append({
             'label': row['Term'],
-            'NES':   float(row['NES']),
-            'FDR':   float(row['FDR q-val']),
+            'nes':   float(row['NES']),
+            'fdr':   float(row['FDR q-val']),
         })
         print(f"  {row['Term']:<62s} NES={row['NES']:+.3f}  FDR={row['FDR q-val']:.4f}")
 
-    plot_nes_panel(records, theme['panel'], theme['fname'],
-                   fig_w=11.0, label_fontsize=10.5)
+    # listed order, first term at the top; 10-term MF panels are drawn taller
+    # (90 x 78 mm) by nes_panel, 6/7-term panels at 90 x 60 mm
+    nes_panel(records, theme['title'], os.path.splitext(theme['fname'])[0], xlim=TITLE_XLIM)
 
 print("\nDone.")

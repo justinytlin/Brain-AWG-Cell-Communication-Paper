@@ -16,29 +16,32 @@ spaceflight):
   GO_BP_results_OSD352/GSEA_ranked_gene_list.csv  (+ GSEA_prerank/gene_sets.gmt)
 
 Every term in a panel is drawn with its FDR label whether or not it is
-significant; an asterisk marks FDR <= 0.05.
+significant; an asterisk marks FDR <= 0.05.  The NES panels are drawn by the
+shared srep_nes_panel.nes_panel (identical layout and term order in OSD-564,
+OSD-562 and OSD-352; xlim (-3.2, 3.2) for the mitochondrial panel, (-2.2, 2.2)
+for the sEV and TNT panels).
 """
 import os
 import re
+import sys
 import warnings
 import numpy as np
 import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
+import srep_style as srep
+srep.apply()                      # Scientific Reports style: Arial 8 pt, >= 1 pt lines, white, no legend frames
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import matplotlib.colors as mcolors
 import gseapy as gp
 from gseapy import gseaplot
 
+from srep_nes_panel import nes_panel, XLIM
+
 warnings.filterwarnings('ignore')
 
-plt.rcParams.update({
-    'font.family': 'Arial',
-    'axes.spines.top': False,
-    'axes.spines.right': False,
-    'figure.dpi': 300,
-})
+# `--nes-only`: redraw the NES summary panels from the saved GSEA tables without
+# re-running prerank for the running-ES curves or rewriting the Excel summary.
+NES_ONLY = '--nes-only' in sys.argv[1:]
 
 # ──────────────────────────────────────────────────────────────────
 # Configuration
@@ -72,6 +75,8 @@ PANELS = {
     'Mito': {
         'lib':      'GO_BP',
         'panel':    'GO BP mitochondrial pathways',
+        'title':    'GO BP mitochondrial terms, OSD-352 whole-brain bulk (n = 3 vs 3)',
+        'xlim':     XLIM['mito'],
         'out_png':  f'{GO_DIR}/GSEA_Mito_NES_summary.png',
         'terms': [
             ('GO:0006119', 'Oxidative Phosphorylation'),
@@ -86,6 +91,8 @@ PANELS = {
     'sEVs_Docking': {
         'lib':      'KEGG',
         'panel':    'KEGG sEV pathways',
+        'title':    'KEGG sEV pathways, OSD-352 whole-brain bulk (n = 3 vs 3)',
+        'xlim':     XLIM['sEV'],
         'out_png':  f'{KEGG_DIR}/pathway_figures/GSEA_sEVs_Docking_NES_summary.png',
         'terms': [
             ('Sphingolipid signaling pathway',        'Sphingolipid signaling pathway'),
@@ -100,6 +107,8 @@ PANELS = {
     'TNTs_Factin': {
         'lib':      'KEGG',
         'panel':    'KEGG TNT pathways',
+        'title':    'KEGG TNT pathways, OSD-352 whole-brain bulk (n = 3 vs 3)',
+        'xlim':     XLIM['TNT'],
         'out_png':  f'{KEGG_DIR}/pathway_figures/GSEA_TNTs_Factin_NES_summary.png',
         'terms': [
             ('Axon guidance',                    'Axon guidance'),
@@ -108,9 +117,6 @@ PANELS = {
         ],
     },
 }
-
-COL_UP   = '#C62828'   # NES > 0, enriched in spaceflight
-COL_DOWN = '#1565C0'   # NES < 0, enriched in ground control
 
 for lib in LIBS.values():
     os.makedirs(lib['plot_dir'], exist_ok=True)
@@ -153,9 +159,7 @@ def lookup(lib_name, key):
 def fdr_label(fdr):
     if pd.isna(fdr):
         return 'not tested'
-    if fdr < 0.001:          # includes FDR == 0 from the permutation null
-        return 'FDR < 0.001'
-    return f'FDR = {fdr:.2f}'
+    return srep.fdr_label(float(fdr))   # 'FDR < 0.001' (incl. FDR == 0) or 'FDR = 0.88'
 
 panel_tables = {}
 print("\nHarmonized panel values:")
@@ -186,80 +190,21 @@ for pkey, pinfo in PANELS.items():
     panel_tables[pkey] = pd.DataFrame(recs)
 
 # ──────────────────────────────────────────────────────────────────
-# 3. NES summary bar plot per panel
-#    All terms are drawn in the listed (harmonized) order, top to bottom,
-#    so panels are directly comparable across OSD-564 / OSD-562 / OSD-352.
+# 3. NES summary bar plot per panel (shared srep_nes_panel.nes_panel)
+#    All terms are drawn in the listed (harmonized) order, first term at the
+#    top, so panels are directly comparable across OSD-564 / OSD-562 / OSD-352.
+#    A term missing from the result table is drawn without a bar ("not tested").
 # ──────────────────────────────────────────────────────────────────
-def bar_color(nes, fdr):
-    base = COL_DOWN if nes < 0 else COL_UP
-    if pd.isna(fdr):
-        alpha = 0.30
-    elif fdr <= 0.05:
-        alpha = 1.00
-    elif fdr <= 0.25:
-        alpha = 0.60
-    else:
-        alpha = 0.30
-    r, g, b = mcolors.to_rgb(base)
-    return (r, g, b, alpha)
-
-legend_handles = [
-    mpatches.Patch(color=COL_UP,   alpha=1.00, label='Enriched in spaceflight (NES > 0)'),
-    mpatches.Patch(color=COL_DOWN, alpha=1.00, label='Enriched in ground control (NES < 0)'),
-    mpatches.Patch(color='grey',   alpha=1.00, label='FDR ≤ 0.05 (*)'),
-    mpatches.Patch(color='grey',   alpha=0.60, label='FDR ≤ 0.25'),
-    mpatches.Patch(color='grey',   alpha=0.30, label='FDR > 0.25'),
-]
-
 print("\nCreating NES summary panels ...")
 for pkey, pinfo in PANELS.items():
-    plot_df = panel_tables[pkey].copy()
-    # listed order top-to-bottom → reverse for barh (index 0 is at the bottom)
-    plot_df = plot_df.iloc[::-1].reset_index(drop=True)
-    n = len(plot_df)
+    tbl = panel_tables[pkey]
+    terms = [{'label': row['label'], 'nes': row['NES'], 'fdr': row['FDR']}
+             for _, row in tbl.iterrows()]
+    nes_panel(terms, pinfo['title'], os.path.splitext(pinfo['out_png'])[0], xlim=pinfo['xlim'])
 
-    fig_h = max(3.2, n * 0.62 + 2.3)
-    fig, ax = plt.subplots(figsize=(11.5, fig_h))
-
-    nes_abs_max = np.nanmax(np.abs(plot_df['NES'].fillna(0).values)) if n else 1.0
-    nes_abs_max = max(nes_abs_max, 0.5)
-    x_lim = nes_abs_max * 1.45 + 0.35
-
-    for i, row in plot_df.iterrows():
-        nes = 0.0 if pd.isna(row['NES']) else row['NES']
-        c = bar_color(nes, row['FDR'])
-        ax.barh(i, nes, color=c, edgecolor='white', height=0.68, zorder=3)
-
-        star  = ' *' if (pd.notna(row['FDR']) and row['FDR'] <= 0.05) else ''
-        label = fdr_label(row['FDR']) + star
-        pad   = 0.05 * nes_abs_max
-        if nes >= 0:
-            ax.text(nes + pad, i, label, va='center', ha='left',
-                    fontsize=9.5, color='#222222', zorder=4)
-        else:
-            ax.text(nes - pad, i, label, va='center', ha='right',
-                    fontsize=9.5, color='#222222', zorder=4)
-
-    ax.set_yticks(range(n))
-    ax.set_yticklabels(plot_df['label'], fontsize=11)
-    ax.set_xlim(-x_lim, x_lim)
-    ax.axvline(0, color='#222222', lw=1.2)
-    ax.xaxis.grid(True, color='#ebebeb', lw=0.8, zorder=0)
-    ax.set_axisbelow(True)
-    ax.set_xlabel('Normalized Enrichment Score (NES)', fontsize=12)
-    ax.set_title(f"{pinfo['panel']}, {DATASET_TAG}",
-                 fontsize=12, fontweight='bold', pad=12)
-
-    # Legend below the axes so it never covers a bar or its FDR label
-    ax.legend(handles=legend_handles, fontsize=9, frameon=True, framealpha=0.92,
-              edgecolor='#cccccc', loc='upper center', bbox_to_anchor=(0.5, -0.16),
-              ncol=3, columnspacing=1.6, handlelength=1.4)
-
-    plt.tight_layout()
-    os.makedirs(os.path.dirname(pinfo['out_png']), exist_ok=True)
-    plt.savefig(pinfo['out_png'], dpi=300, bbox_inches='tight')
-    plt.close()
-    print(f"  Saved → {pinfo['out_png']}")
+if NES_ONLY:
+    print("\n--nes-only: skipping the running-ES plots (no prerank re-run) and the Excel summary.")
+    sys.exit(0)
 
 # ──────────────────────────────────────────────────────────────────
 # 4. Individual enrichment (running-ES) plots for every harmonized term

@@ -1,5 +1,6 @@
 """
-OSD-564 (GLDS-569, RR-10) volcano plots, PCA and significant-gene export.
+OSD-564 (GLDS-569, RR-10) volcano plots, PCA and significant-gene export,
+Scientific Reports style (srep_style: Arial 8 pt, >= 1 pt lines, white background).
 
 Contrast: (Space Flight) v (Ground Control)  ->  log2FC > 0 = up in spaceflight.
 
@@ -8,25 +9,23 @@ genes), including rows whose SYMBOL is missing.  Curated-gene matching splits
 pipe-joined SYMBOL entries ("Ndufb4|Ndufb4c|Ndufb4b") and matches the first token
 first (then any token); the display label is the first token.  "COX2"
 (ENSMUSG00000064354) is the mitochondrially encoded mt-Co2 and is displayed as such.
+
+Panels: OSD564_Volcano_plot (118 x 100 mm), OSD564_Volcano_plot_annotated (118 x 100 mm),
+OSD564_PCA_plot (60 x 60 mm); each written as 300 dpi PNG + vector PDF.
 """
 import pandas as pd
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-from matplotlib.lines import Line2D
+import srep_style as srep; srep.apply()
+import srep_panels                      # shared PCA / volcano / QC panel drawers (identical in all datasets)
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 import warnings
 warnings.filterwarnings('ignore')
 
-plt.rcParams.update({
-    'font.family': 'Arial',
-    'axes.spines.top': False,
-    'axes.spines.right': False,
-    'figure.dpi': 300,
-})
+STUDY_TAG = 'OSD-564, spaceflight vs ground control (n = 5 vs 5)'
+PCA_TAG   = 'OSD-564, spaceflight vs ground control'   # 60 mm panel: the n goes in the figure legend
 
 # ──────────────────────────────────────────────────────────────────
 # 1.  Load data
@@ -46,20 +45,20 @@ print(f"DE table:   {de.shape[0]:,} genes x {de.shape[1]} columns")
 # 2.  Group definitions
 # ──────────────────────────────────────────────────────────────────
 GROUP_INFO = {
-    'RR-10 FLT': {
+    'Spaceflight': {
         'samples': ['RR10_HPC_FLT_WT_F1', 'RR10_HPC_FLT_WT_F3', 'RR10_HPC_FLT_WT_F5',
                     'RR10_HPC_FLT_WT_F7', 'RR10_HPC_FLT_WT_F9'],
-        'color':   '#D32F2F',
+        'color':   srep.COLORS['flight'],
     },
-    'RR-10 GC': {
+    'Ground control': {
         'samples': ['RR10_HPC_GC_WT_G1', 'RR10_HPC_GC_WT_G3', 'RR10_HPC_GC_WT_G5',
                     'RR10_HPC_GC_WT_G7', 'RR10_HPC_GC_WT_G9'],
-        'color':   '#1565C0',
+        'color':   srep.COLORS['ground'],
     },
 }
 
 # ──────────────────────────────────────────────────────────────────
-# 3.  PCA  -- top 2,000 most-variable genes, z-scored
+# 3.  PCA  -- top 2000 most-variable genes, z-scored
 # ──────────────────────────────────────────────────────────────────
 print("\nRunning PCA ...")
 TOP_N = 2000
@@ -77,36 +76,16 @@ pca_df = pd.DataFrame(pca_coords, index=X.index,
 var_exp = pca.explained_variance_ratio_ * 100
 print(f"PC1: {var_exp[0]:.1f}%   PC2: {var_exp[1]:.1f}%   PC3: {var_exp[2]:.1f}%")
 
-fig, ax = plt.subplots(figsize=(7, 5.5))
-
-for gname, ginfo in GROUP_INFO.items():
-    samps = [s for s in ginfo['samples'] if s in pca_df.index]
-    ax.scatter(pca_df.loc[samps, 'PC1'], pca_df.loc[samps, 'PC2'],
-               s=160, color=ginfo['color'], marker='o',
-               edgecolors='black', linewidths=1.4, zorder=5,
-               label=f'{gname} (n={len(samps)})')
-
-ax.set_xlabel(f'PC1 ({var_exp[0]:.1f}% variance)', fontsize=12)
-ax.set_ylabel(f'PC2 ({var_exp[1]:.1f}% variance)', fontsize=12)
-ax.set_title('OSD-564 PCA, RR-10 FLT (n=5) vs GC (n=5)\n'
-             f'VST counts, top {TOP_N:,} variable genes, z-scored',
-             fontsize=11.5, fontweight='bold', pad=12)
-
-ax.legend(fontsize=10, frameon=True, framealpha=0.9,
-          edgecolor='#cccccc', loc='best', markerscale=1.1,
-          labelspacing=1.0, handlelength=1.5, borderpad=0.8)
-
-ax.axhline(0, color='#cccccc', lw=0.8, ls='--', zorder=0)
-ax.axvline(0, color='#cccccc', lw=0.8, ls='--', zorder=0)
-
-plt.tight_layout()
-pca_path = 'OSD564_PCA_plot.png'
-plt.savefig(pca_path, dpi=300, bbox_inches='tight')
-plt.close()
-print(f"Saved -> {pca_path}")
+# shared 60 x 60 mm PCA panel: short sample IDs (F1 ... G9) next to every point
+pca_samples = [s for g in GROUP_INFO.values() for s in g['samples'] if s in pca_df.index]
+pca_groups  = [g for g, info in GROUP_INFO.items() for s in info['samples'] if s in pca_df.index]
+srep_panels.pca_panel(pca_df.loc[pca_samples, ['PC1', 'PC2']],
+                      labels=[s.split('_')[-1] for s in pca_samples],
+                      groups=pca_groups, pc_var=(var_exp[0], var_exp[1]),
+                      title=PCA_TAG, out_base='OSD564_PCA_plot')
 
 # ──────────────────────────────────────────────────────────────────
-# 4.  Volcano data  -- RR-10 FLT vs GC
+# 4.  Volcano data  -- spaceflight vs ground control
 # ──────────────────────────────────────────────────────────────────
 print("\nPreparing volcano plot ...")
 
@@ -130,8 +109,8 @@ df_v = df_v.dropna(subset=['log2fc', 'pval', 'adjpval'])
 df_v['-log10p'] = -np.log10(df_v['pval'].clip(lower=1e-300))
 df_v['first_symbol'] = df_v['symbol'].str.split('|').str[0]
 N_TESTED = len(df_v)
-print(f"Genes with statistics (tested): {N_TESTED:,}  "
-      f"(of which {int((df_v['symbol'] == '').sum()):,} without SYMBOL)")
+print(f"Genes with statistics (tested): {srep.fmt_int(N_TESTED)}  "
+      f"(of which {srep.fmt_int((df_v['symbol'] == '').sum())} without SYMBOL)")
 
 # Significance thresholds
 FC_THR  = 1.0   # |log2FC| >= 1
@@ -149,63 +128,14 @@ n_nom_up, n_nom_down = int(nom_sig_up.sum()), int(nom_sig_down.sum())
 print(f"Adj.p<=0.05 & |FC|>=1  -- UP: {n_adj_up}  DOWN: {n_adj_down}")
 print(f"Nom.p<=0.05 & |FC|>=1 (not adj.) -- UP: {n_nom_up}  DOWN: {n_nom_down}")
 
-XLAB   = 'log2 fold change (spaceflight / ground control)'
-YLAB   = '-log10(nominal p-value)'
-TITLE  = 'OSD-564 Volcano Plot, RR-10 FLT (n=5) vs RR-10 GC (n=5), 18-19 weeks'
-LEGEND_TITLE = f'n counted over all tested genes (N = {N_TESTED:,})'
+# legend counts (over all tested genes) handed to the shared panel drawer
+COUNTS = {'n_nom_up': n_nom_up, 'n_nom_down': n_nom_down,
+          'n_adj_up': n_adj_up, 'n_adj_down': n_adj_down}
+assert COUNTS == srep_panels.volcano_counts(df_v)
 
-LBL_NOM_UP   = f'Nom. sig. up in spaceflight (p<=0.05, |log2FC|>=1, not adj. sig.), n = {n_nom_up}'
-LBL_NOM_DOWN = f'Nom. sig. down in spaceflight (p<=0.05, |log2FC|>=1, not adj. sig.), n = {n_nom_down}'
-LBL_ADJ_UP   = f'Adj. sig. up in spaceflight (adj p<=0.05, |log2FC|>=1), n = {n_adj_up}'
-LBL_ADJ_DOWN = f'Adj. sig. down in spaceflight (adj p<=0.05, |log2FC|>=1), n = {n_adj_down}'
-
-y_col = '-log10p'
-
-
-def draw_volcano_layers(ax, star_size=90):
-    """Background, nominal and adjusted layers shared by both volcano figures."""
-    ax.scatter(df_v.loc[not_sig, 'log2fc'], df_v.loc[not_sig, y_col],
-               s=7, color='#BDBDBD', alpha=0.40, linewidths=0, rasterized=True,
-               label='Not significant')
-    ax.scatter(df_v.loc[nom_sig_up, 'log2fc'], df_v.loc[nom_sig_up, y_col],
-               s=18, color='#EF9A9A', alpha=0.80, linewidths=0.3,
-               edgecolors='#C62828', rasterized=True, label=LBL_NOM_UP)
-    ax.scatter(df_v.loc[nom_sig_down, 'log2fc'], df_v.loc[nom_sig_down, y_col],
-               s=18, color='#90CAF9', alpha=0.80, linewidths=0.3,
-               edgecolors='#1565C0', rasterized=True, label=LBL_NOM_DOWN)
-    ax.scatter(df_v.loc[adj_sig_up, 'log2fc'], df_v.loc[adj_sig_up, y_col],
-               s=star_size, color='#C62828', alpha=1.0, linewidths=0.5,
-               edgecolors='#8B0000', marker='*', zorder=5, label=LBL_ADJ_UP)
-    ax.scatter(df_v.loc[adj_sig_down, 'log2fc'], df_v.loc[adj_sig_down, y_col],
-               s=star_size, color='#1565C0', alpha=1.0, linewidths=0.5,
-               edgecolors='#0D47A1', marker='*', zorder=5, label=LBL_ADJ_DOWN)
-    ax.axhline(-np.log10(NOM_THR), color='#9E9E9E', lw=1.0, ls='--', alpha=0.7,
-               label=f'Nominal p = {NOM_THR}')
-    ax.axvline( FC_THR, color='#9E9E9E', lw=1.0, ls=':', alpha=0.7)
-    ax.axvline(-FC_THR, color='#9E9E9E', lw=1.0, ls=':', alpha=0.7)
-    ax.set_xlabel(XLAB, fontsize=12)
-    ax.set_ylabel(YLAB, fontsize=12)
-
-
-# ── 4a. plain volcano ─────────────────────────────────────────────
-fig, ax = plt.subplots(figsize=(9, 7.5))
-draw_volcano_layers(ax)
-ax.set_title(TITLE, fontsize=11.5, fontweight='bold', pad=14)
-
-y_axis_top = df_v[y_col].quantile(0.9998) * 1.15
-ax.set_xlim(df_v['log2fc'].quantile(0.001) - 0.4,
-            df_v['log2fc'].quantile(0.999) + 0.4)
-ax.set_ylim(-0.2, y_axis_top)
-
-# legend below the axes so it never hides data points
-ax.legend(fontsize=8, frameon=True, framealpha=0.92, edgecolor='#cccccc',
-          loc='upper center', ncol=2, bbox_to_anchor=(0.5, -0.09),
-          title=LEGEND_TITLE, title_fontsize=8)
-
-volcano_path = 'OSD564_Volcano_plot.png'
-plt.savefig(volcano_path, dpi=300, bbox_inches='tight')
-plt.close()
-print(f"Saved -> {volcano_path}")
+# ── 4a. plain volcano (118 x 100 mm, no gene labels) ──────────────
+srep_panels.volcano_panel(df_v, 'volcano', STUDY_TAG, label_genes=None, highlight_genes=None,
+                          out_base='OSD564_Volcano_plot', counts=COUNTS)
 
 # ──────────────────────────────────────────────────────────────────
 # 4b. Volcano plot with curated gene annotations
@@ -265,67 +195,13 @@ for ens, r in pd.concat([df_annot, df_extra]).iterrows():
     print(f"   {r['display']:<10s} {ens}  SYMBOL='{r['symbol']}'  "
           f"log2FC={r['log2fc']:+.2f}  p={r['pval']:.2e}  adj p={r['adjpval']:.4f}")
 
-fig, ax = plt.subplots(figsize=(14, 11))
-draw_volcano_layers(ax)
-
-ax.scatter(df_annot['log2fc'], df_annot[y_col],
-           s=60, color='#FF6F00', alpha=1.0, linewidths=0.8,
-           edgecolors='#E65100', zorder=6,
-           label=f'Curated genes (n={len(df_annot)})')
-ax.scatter(df_extra['log2fc'], df_extra[y_col],
-           s=110, color='#2E7D32', alpha=1.0, linewidths=0.9, marker='D',
-           edgecolors='#1B5E20', zorder=7,
-           label=f'Vps4a, Ist1, Prkaa1 (adj p<=0.05, |log2FC|<1) (n={len(df_extra)})')
-
-ax.set_title(TITLE + '\ncurated gene annotations',
-             fontsize=11.5, fontweight='bold', pad=14)
-
-y_axis_top_a = df_v[y_col].quantile(0.9998) * 1.15
-ax.set_xlim(df_v['log2fc'].quantile(0.001) - 2.5,
-            df_v['log2fc'].quantile(0.999) + 1.5)
-ax.set_ylim(-0.2, y_axis_top_a * 1.12)
-
+# shared 118 x 100 mm volcano: all curated genes (orange circles) + Vps4a / Ist1 / Prkaa1
+# (orange open diamonds) are labelled; adjustText places the labels with leader lines
+LBL_EXTRA = 'Vps4a, Ist1, Prkaa1 (adjusted p ≤ 0.05, |log2FC| < 1)'
 df_lab = pd.concat([df_annot, df_extra])
-texts, annot_coords = [], []
-for _, row in df_lab.iterrows():
-    txt = ax.text(row['log2fc'], row[y_col], row['display'],
-                  fontsize=8, ha='center', va='center',
-                  color='#111111', fontweight='bold', zorder=8, clip_on=False,
-                  bbox=dict(boxstyle='round,pad=0.15', fc='white', ec='none', alpha=0.85))
-    texts.append(txt)
-    annot_coords.append((row['log2fc'], row[y_col]))
-
-try:
-    from adjustText import adjust_text
-    adjust_text(texts, ax=ax,
-                x=df_lab['log2fc'].values, y=df_lab[y_col].values,
-                force_text=(0.5, 1.0), force_static=(0.15, 0.3),
-                force_pull=(0.01, 0.02), force_explode=(3.0, 5.0),
-                expand=(1.4, 2.0), max_move=(300, 300), iter_lim=1000,
-                min_arrow_len=99999)
-except ImportError:
-    for txt in texts:
-        x0, y0 = txt.get_position()
-        txt.set_position((x0, y0 + 0.25))
-
-# Connector lines from each dot to its (repositioned) label
-for txt, (px, py) in zip(texts, annot_coords):
-    lx, ly = txt.get_position()
-    if np.hypot(lx - px, ly - py) > 0.08:
-        ax.annotate('', xy=(px, py), xytext=(lx, ly), xycoords='data', textcoords='data',
-                    zorder=6, arrowprops=dict(arrowstyle='-', color='#555555',
-                                              lw=0.8, shrinkA=4, shrinkB=4))
-
-# legend below the axes so it never hides data points or labels
-ax.legend(fontsize=9.5, frameon=True, framealpha=0.92, edgecolor='#cccccc',
-          loc='upper center', ncol=2, bbox_to_anchor=(0.5, -0.06),
-          markerscale=1.2, labelspacing=0.6, handlelength=1.8, borderpad=0.8,
-          title=LEGEND_TITLE, title_fontsize=9.5)
-
-annot_volcano_path = 'OSD564_Volcano_plot_annotated.png'
-plt.savefig(annot_volcano_path, dpi=300, bbox_inches='tight')
-plt.close()
-print(f"Saved -> {annot_volcano_path}")
+srep_panels.volcano_panel(df_v, 'volcano', STUDY_TAG, label_genes=df_lab, highlight_genes=df_annot,
+                          out_base='OSD564_Volcano_plot_annotated', counts=COUNTS,
+                          extra_genes=df_extra, extra_label=LBL_EXTRA)
 
 # ──────────────────────────────────────────────────────────────────
 # 5.  Spreadsheet of significant genes (same gene set / thresholds as the legend)

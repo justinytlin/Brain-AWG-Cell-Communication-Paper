@@ -26,3 +26,6 @@ Analysis code for *Short-Duration Spaceflight Alters Cellular Transport Pathways
 
 ## Running
 Each script is run from inside its folder with the input files placed alongside (paths are relative). See `OSD-562/README_OSD562_rerun.md` and `OSD-352_spatial/CA3_panels/README_CA3_panels.md` for the two multi-step pipelines.
+
+## Journal-ready figures
+`srep_style.py` (shared typeface/size/line-width rules for Scientific Reports), `srep_nes_panel.py` (all NES bar panels) and `srep_panels.py` (volcano, PCA and QC panels) are copied into each dataset folder so scripts run from their own directory. `assemble_figures.py` places the per-panel PNGs 1:1 onto 183 mm-wide canvases with bold lower-case panel letters and writes `Figures_SciRep/<figure>.png/.tif/.pdf` at 300 dpi. The assembled PNGs are committed in `Figures_SciRep/`.

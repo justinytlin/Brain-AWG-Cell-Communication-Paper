@@ -1,10 +1,11 @@
 """
-g:Profiler ORA bar panels for OSD-564 (spaceflight vs ground control).
+g:Profiler ORA bar panels for OSD-564 (spaceflight vs ground control), Scientific
+Reports style (90 x 65 mm, 8 pt Arial, no truncated bars).
 
 Inputs: the two g:Profiler exports in gprofiler/ (up- and down-regulated DEG queries).
 Terms are matched by term_id (GO:xxxxxxx / KEGG:xxxxx) so that e.g. "Ribosome" picks
 the KEGG pathway and not the GO:CC term of the same name.  Labels are the real term
-names from the export, formatted "term name (ID) [source]".
+names from the export, formatted "Term name (ID) [source]" in sentence case.
 
 Panels
   TNTs : up  = actin cytoskeleton organization; plasma membrane bounded cell projection
@@ -23,25 +24,26 @@ Panels
 
 Generic terms enriched in both directions ("organelle organization", "synapse",
 "intracellular membrane-bounded organelle") are intentionally excluded.
+
+Figure-legend text (not drawn in the panel): input = adjusted p < 0.05 DEGs,
+410 up / 496 down; g:SCS-adjusted p; dashed vertical line = adjusted p = 0.05;
+dashed horizontal line separates the up- and down-regulated queries.
 """
 import os
-import textwrap
 import warnings
 import pandas as pd
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
+import srep_style as srep; srep.apply()
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+from matplotlib.ticker import MaxNLocator
+
+from osd564_nes_panel import (label_case, wrap_lines, fit_xlim_to_texts,
+                              xlabel_no_clip, STUDY_TAG)
 
 warnings.filterwarnings('ignore')
-
-plt.rcParams.update({
-    'font.family': 'Arial',
-    'axes.spines.top': False,
-    'axes.spines.right': False,
-    'figure.dpi': 300,
-})
 
 # ── Paths ──────────────────────────────────────────────────────────
 GPROFILER_DIR = 'gprofiler'
@@ -86,12 +88,9 @@ def neglog10_padj(row):
 
 
 # ── Figure definitions (term_id, expected term_name for sanity check) ──
-SUBTITLE = 'input: adjusted p < 0.05 DEGs, 410 up / 496 down; g:SCS-adjusted p'
-
 FIGURES = [
     {
         'key':   'TNTs',
-        'title': 'g:Profiler ORA, TNT-related terms, OSD-564: spaceflight vs ground control',
         'up_terms': [
             ('GO:0030036', 'actin cytoskeleton organization'),
             ('GO:0120036', 'plasma membrane bounded cell projection organization'),
@@ -104,11 +103,10 @@ FIGURES = [
             ('GO:0022626', 'cytosolic ribosome'),
             ('KEGG:03010', 'Ribosome'),
         ],
-        'fname': os.path.join(GPROFILER_DIR, 'gprofiler_ORA_TNTs_pathways.png'),
+        'fname': os.path.join(GPROFILER_DIR, 'gprofiler_ORA_TNTs_pathways'),
     },
     {
         'key':   'sEVs',
-        'title': 'g:Profiler ORA, sEV-related terms, OSD-564: spaceflight vs ground control',
         'up_terms': [
             ('GO:0016192', 'vesicle-mediated transport'),
             ('GO:0045055', 'regulated exocytosis'),
@@ -120,11 +118,10 @@ FIGURES = [
         # No vesicle-specific term (synaptic vesicle / exocytosis / secretory vesicle)
         # is present in the downregulated export, so the down side is empty.
         'dn_terms': [],
-        'fname': os.path.join(GPROFILER_DIR, 'gprofiler_ORA_sEVs_pathways.png'),
+        'fname': os.path.join(GPROFILER_DIR, 'gprofiler_ORA_sEVs_pathways'),
     },
     {
         'key':   'mito',
-        'title': 'g:Profiler ORA, mitochondrial terms, OSD-564: spaceflight vs ground control',
         'up_terms': [],
         'dn_terms': [
             ('GO:0006119', 'oxidative phosphorylation'),
@@ -137,21 +134,24 @@ FIGURES = [
             ('GO:0005743', 'mitochondrial inner membrane'),
             ('GO:0005740', 'mitochondrial envelope'),
         ],
-        'fname': os.path.join(GPROFILER_DIR, 'gprofiler_ORA_mito_downregulated_pathways.png'),
+        'fname': os.path.join(GPROFILER_DIR, 'gprofiler_ORA_mito_downregulated_pathways'),
     },
 ]
 
 # ── Styling constants ──────────────────────────────────────────────
-UP_COLOR  = '#C62828'   # red  - over-represented among genes upregulated in spaceflight
-DN_COLOR  = '#1565C0'   # blue - over-represented among genes downregulated in spaceflight
-X_CAP     = 20.0        # bars truncated here; the true value is printed as the label
-SIG_THR   = -np.log10(0.05)  # ~1.30
-FOOTNOTE  = 'bars truncated at 20; label shows -log10 adjusted p'
+UP_COLOR    = srep.COLORS['up']        # over-represented among genes upregulated in spaceflight
+DN_COLOR    = srep.COLORS['down']      # over-represented among genes downregulated in spaceflight
+UP_COLOR_NS = srep.COLORS['nom_up']
+DN_COLOR_NS = srep.COLORS['nom_down']
+GREY        = '#777777'
+SIG_THR     = -np.log10(0.05)          # ~1.30
+WRAP        = 38                       # characters per label line
 
 
-def wrap_label(term_name, term_id, source, max_w=46):
-    """'term name (GO:xxxxxxx) [GO:BP]' wrapped to max_w characters per line."""
-    return '\n'.join(textwrap.wrap(f'{term_name} ({term_id}) [{source}]', max_w))
+def wrap_label(term_name, term_id, source, min_w=WRAP):
+    """'Term name (GO:xxxxxxx) [GO:BP]' in sentence case, wrapped to at most two
+    lines of at least min_w characters."""
+    return wrap_lines(label_case(f'{term_name} ({term_id}) [{source}]'), min_w)
 
 
 def collect(term_list, lookup, direction):
@@ -199,79 +199,65 @@ for fig_def in FIGURES:
     y_pos = {i: n - 1 - i for i in range(n)}
     y_labels = [wrap_label(r['name'], r['id'], r['source']) for r in combined]
 
-    fig_h = max(4.2, n * 0.62 + 3.0)
-    fig, ax = plt.subplots(figsize=(11.5, fig_h))
+    # 90 x 65 mm holds up to 7 rows of two-line 8 pt labels; the 8- and 9-term
+    # panels need ~6 mm per row plus ~19 mm for title, x-axis and a one-row
+    # legend (+3.5 mm for a second legend row)
+    w_mm, h_mm = srep.PANEL_MM['ora']
+    n_legend_rows = int(bool(up_recs)) + int(bool(dn_recs))
+    h_mm = max(h_mm, 19 + 6 * n + 3.5 * (n_legend_rows - 1))
+    fig, ax = plt.subplots(figsize=srep.figsize_mm(w_mm, h_mm), constrained_layout=True)
 
-    # ── Draw bars ──────────────────────────────────────────────────
+    # ── Bars (full length, never truncated) + printed value ─────────
+    anchored = []
     for i, rec in enumerate(combined):
-        y     = y_pos[i]
-        color = UP_COLOR if rec['direction'] == 'up' else DN_COLOR
-        alpha = 1.00 if rec['padj'] <= 0.05 else 0.45
-        val   = rec['val']
-        bw    = min(val, X_CAP)
-
-        ax.barh(y, bw, color=color, alpha=alpha,
-                edgecolor='white', height=0.70, zorder=2)
-
-        if val > X_CAP:
-            # visible truncation mark: two white slanted lines across the bar end
-            for dx in (-0.55, -0.15):
-                ax.plot([X_CAP + dx - 0.25, X_CAP + dx + 0.25], [y - 0.42, y + 0.42],
-                        color='white', lw=2.6, solid_capstyle='butt', zorder=3)
-            ax.text(X_CAP + 0.35, y, f'{val:.1f}  (truncated)',
-                    va='center', ha='left', fontsize=10, color=color,
-                    fontweight='bold', zorder=4)
+        y   = y_pos[i]
+        sig = rec['padj'] <= 0.05
+        if rec['direction'] == 'up':
+            color = UP_COLOR if sig else UP_COLOR_NS
         else:
-            sig_str = ' *' if rec['padj'] <= 0.05 else ''
-            ax.text(bw + 0.25, y, f'{val:.2f}{sig_str}',
-                    va='center', ha='left', fontsize=10, color='#333333', zorder=4)
+            color = DN_COLOR if sig else DN_COLOR_NS
+        val = rec['val']
+        ax.barh(y, val, color=color, edgecolor='none', linewidth=0, height=0.70, zorder=2)
+        t = ax.annotate(f'{val:.2f}', xy=(val, y), xytext=(3, 0), textcoords='offset points',
+                        va='center', ha='left', color='black', zorder=4, annotation_clip=False)
+        t.set_in_layout(False)
+        anchored.append((t, val, 'right'))
 
-    # ── Group separator ────────────────────────────────────────────
+    # ── Group separator (up vs down queries) ───────────────────────
     n_up, n_dn = len(up_recs), len(dn_recs)
     if n_up > 0 and n_dn > 0:
         sep_y = y_pos[n_up - 1] - 0.5
-        ax.axhline(sep_y, color='#777777', lw=1.2, linestyle='--', alpha=0.8, zorder=3)
+        ax.axhline(sep_y, color=GREY, lw=srep.LINE_PT, linestyle='--', zorder=3)
 
-    # ── Significance threshold line ────────────────────────────────
-    ax.axvline(SIG_THR, color='#666666', lw=0.9, linestyle=':', alpha=0.85, zorder=1)
-    ax.text(SIG_THR + 0.12, n - 0.35, 'adj. p = 0.05', va='top', ha='left',
-            fontsize=9, color='#666666', style='italic')
+    # ── Significance threshold (adjusted p = 0.05) ─────────────────
+    ax.axvline(SIG_THR, color=GREY, lw=srep.LINE_PT, linestyle='--', zorder=1)
 
     # ── Axis formatting ────────────────────────────────────────────
-    ax.set_xlim(0, X_CAP + 5.5)
-    ax.set_ylim(-0.7, n - 0.3)
+    ax.set_ylim(-0.6, n - 0.4)
     ax.set_yticks([y_pos[i] for i in range(n)])
-    ax.set_yticklabels(y_labels, fontsize=10.5)
-
-    xticks = list(range(0, int(X_CAP) + 1, 5))
-    ax.set_xticks(xticks)
-    ax.set_xticklabels([str(t) for t in xticks], fontsize=10)
-    # visible cap marker on the axis
-    ax.axvline(X_CAP, color='#999999', lw=0.9, linestyle='--', alpha=0.9, zorder=1)
-    ax.text(X_CAP, -0.62, 'cap', ha='center', va='bottom', fontsize=8.5, color='#777777')
-
-    ax.set_xlabel('$-\\log_{10}$(adjusted p-value), g:Profiler ORA', fontsize=11)
-    ax.set_title(f"{fig_def['title']}\n{SUBTITLE}", fontsize=11.5, fontweight='bold', pad=10)
-
-    ax.xaxis.grid(True, color='#eeeeee', lw=0.7, zorder=0)
-    ax.set_axisbelow(True)
+    ax.set_yticklabels(y_labels, linespacing=1.0)
+    ax.tick_params(axis='y', length=0)
     ax.spines['left'].set_visible(False)
-    ax.tick_params(axis='y', length=0, pad=5)
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
+    fig.suptitle(STUDY_TAG, x=0.01, ha='left')
 
-    # ── Legend + footnote ─────────────────────────────────────────
-    legend_handles = [
-        mpatches.Patch(color=UP_COLOR, label='Over-represented among genes upregulated in spaceflight'),
-        mpatches.Patch(color=DN_COLOR, label='Over-represented among genes downregulated in spaceflight'),
-    ]
-    fig.legend(handles=legend_handles, fontsize=9.5, frameon=False,
-               loc='lower center', bbox_to_anchor=(0.5, 0.25 / fig_h), ncol=1)
-    fig.text(0.5, 0.04 / fig_h, FOOTNOTE + ';  * = adjusted p ≤ 0.05',
-             ha='center', va='bottom', fontsize=9, color='#555555', style='italic')
+    # ── Legend (only the directions present) ──────────────────────
+    handles = []
+    if n_up:
+        handles.append(mpatches.Patch(color=UP_COLOR,
+                       label='Over-represented among genes upregulated in spaceflight'))
+    if n_dn:
+        handles.append(mpatches.Patch(color=DN_COLOR,
+                       label='Over-represented among genes downregulated in spaceflight'))
+    fig.legend(handles=handles, loc='outside lower left', ncol=1, frameon=False)
 
-    # reserve ~0.95 in at the bottom for the legend + footnote
-    plt.tight_layout(rect=(0, 0.95 / fig_h, 1, 1))
-    plt.savefig(fig_def['fname'], dpi=300, bbox_inches='tight')
-    plt.close()
-    print(f"  Saved -> {fig_def['fname']}")
+    x_max = max(r['val'] for r in combined)
+    fit_xlim_to_texts(fig, ax, anchored, 0.0, x_max, lo_fixed=0.0)
+    xlabel_no_clip(fig, ax, '-log10(adjusted p)')
+    fit_xlim_to_texts(fig, ax, anchored, 0.0, x_max, lo_fixed=0.0)
+
+    srep.save(fig, fig_def['fname'])
+    plt.close(fig)
+    print(f"  Saved -> {fig_def['fname']}.png / .pdf   ({w_mm} x {h_mm} mm)")
 
 print("\nDone.")

@@ -14,17 +14,12 @@ import numpy as np
 import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+import srep_style as srep
+srep.apply()                      # Scientific Reports style: Arial 8 pt, >= 1 pt lines, white, no legend frames
+import srep_panels                # shared PCA / volcano / QC panel drawers (identical in all datasets)
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 warnings.filterwarnings('ignore')
-
-plt.rcParams.update({
-    'font.family': 'Arial',
-    'axes.spines.top': False,
-    'axes.spines.right': False,
-    'figure.dpi': 300,
-})
 
 # ──────────────────────────────────────────────────────────────────
 # 1.  Load data
@@ -47,13 +42,13 @@ print(f"DE table:      {de.shape[0]:,} genes × {de.shape[1]} columns")
 # 2.  Group definitions
 # ──────────────────────────────────────────────────────────────────
 GROUP_INFO = {
-    'Spaceflight (FLT)': {
+    'Spaceflight': {
         'samples': ['RR3_BRN_FLT_F1', 'RR3_BRN_FLT_F2', 'RR3_BRN_FLT_F7'],
-        'color':   '#D32F2F',
+        'color':   srep.COLORS['flight'],
     },
-    'Ground control (GC)': {
+    'Ground control': {
         'samples': ['RR3_BRN_GC_G7', 'RR3_BRN_GC_G8', 'RR3_BRN_GC_G9'],
-        'color':   '#1565C0',
+        'color':   srep.COLORS['ground'],
     },
 }
 
@@ -76,38 +71,15 @@ pca_df = pd.DataFrame(pca_coords, index=X.index,
 var_exp = pca.explained_variance_ratio_ * 100
 print(f"PC1: {var_exp[0]:.1f}%   PC2: {var_exp[1]:.1f}%   PC3: {var_exp[2]:.1f}%")
 
-fig, ax = plt.subplots(figsize=(7, 5.8))
-
-for gname, ginfo in GROUP_INFO.items():
-    samps = [s for s in ginfo['samples'] if s in pca_df.index]
-    ax.scatter(pca_df.loc[samps, 'PC1'], pca_df.loc[samps, 'PC2'],
-               s=160, color=ginfo['color'], marker='o',
-               edgecolors='black', linewidths=1.4, alpha=1.0, zorder=5,
-               label=gname)
-    for s in samps:
-        ax.annotate(s.split('_')[-1], (pca_df.loc[s, 'PC1'], pca_df.loc[s, 'PC2']),
-                    textcoords='offset points', xytext=(8, 6), fontsize=8.5,
-                    color='#333333', zorder=6)
-
-ax.set_xlabel(f'PC1 ({var_exp[0]:.1f}% variance)', fontsize=12)
-ax.set_ylabel(f'PC2 ({var_exp[1]:.1f}% variance)', fontsize=12)
-fig.suptitle('OSD-352 PCA, whole-brain bulk, FLT (n=3) vs GC (n=3)',
-             fontsize=12, fontweight='bold', y=0.955)
-ax.set_title('log2(normalized counts + 1), top 2,000 variable genes, z-scored',
-             fontsize=10, color='#444444', pad=8)
-
-ax.legend(fontsize=10, frameon=True, framealpha=0.9,
-          edgecolor='#cccccc', loc='best', markerscale=1.1,
-          labelspacing=1.0, handlelength=1.5, borderpad=0.8)
-
-ax.axhline(0, color='#cccccc', lw=0.8, ls='--', zorder=0)
-ax.axvline(0, color='#cccccc', lw=0.8, ls='--', zorder=0)
-
-plt.tight_layout(rect=(0, 0, 1, 0.93))
-pca_path = 'OSD352_PCA_plot.png'
-plt.savefig(pca_path, dpi=300, bbox_inches='tight')
-plt.close()
-print(f"Saved → {pca_path}")
+# shared 60 x 60 mm PCA panel: short sample IDs (F1, F2, F7, G7, G8, G9) next to every point;
+# the "top 2,000 variable genes" setting goes in the figure legend
+pca_samples = [s for g in GROUP_INFO.values() for s in g['samples'] if s in pca_df.index]
+pca_groups  = [g for g, info in GROUP_INFO.items() for s in info['samples'] if s in pca_df.index]
+srep_panels.pca_panel(pca_df.loc[pca_samples, ['PC1', 'PC2']],
+                      labels=[s.split('_')[-1] for s in pca_samples],
+                      groups=pca_groups, pc_var=(var_exp[0], var_exp[1]),
+                      title='OSD-352, spaceflight vs ground control',
+                      out_base='OSD352_PCA_plot')
 
 # ──────────────────────────────────────────────────────────────────
 # 4.  DE table: all tested genes (for legend counts) and the
@@ -192,72 +164,15 @@ print("  Adjusted-significant genes (adj.p<=0.05): "
 # 5.  Volcano helpers
 # ──────────────────────────────────────────────────────────────────
 Y_COL = '-log10p'   # y-axis uses the nominal p-value (more informative at n = 3 vs 3)
-X_LABEL = 'log2 fold change (spaceflight / ground control)'
-Y_LABEL = '-log10 (nominal p-value)'
-TITLE_MAIN = 'OSD-352 Volcano Plot, RR-3 whole-brain bulk RNA-seq, FLT (n=3) vs GC (n=3), ~18 weeks'
-LEGEND_NOTE = f'n counted over all tested genes ({n_tested:,} with non-missing statistics)'
+# one short in-panel line; the full description belongs to the figure legend.  The full
+# "OSD-352 whole-brain bulk, spaceflight vs ground control (n = 3 vs 3)" is 86 mm wide at
+# 8 pt and does not fit the 90 mm panel; this 80 mm variant keeps the parallel wording.
+TITLE_MAIN = 'OSD-352 whole brain, spaceflight vs ground control (n = 3 vs 3)'
 
-def draw_volcano_layers(ax):
-    """Background + significance layers; legend counts are over all tested genes."""
-    ax.scatter(df_all.loc[not_sig, 'log2fc'], df_all.loc[not_sig, Y_COL],
-               s=7, color='#BDBDBD', alpha=0.40, linewidths=0, rasterized=True,
-               label='Not significant')
-    ax.scatter(df_all.loc[nom_sig_up, 'log2fc'], df_all.loc[nom_sig_up, Y_COL],
-               s=18, color='#EF9A9A', alpha=0.80, linewidths=0.3,
-               edgecolors='#C62828', rasterized=True,
-               label=f'Nom. sig. up in spaceflight (p<=0.05, |log2FC|>=1; n={n_nom_up})')
-    ax.scatter(df_all.loc[nom_sig_down, 'log2fc'], df_all.loc[nom_sig_down, Y_COL],
-               s=18, color='#90CAF9', alpha=0.80, linewidths=0.3,
-               edgecolors='#1565C0', rasterized=True,
-               label=f'Nom. sig. down in spaceflight (p<=0.05, |log2FC|>=1; n={n_nom_down})')
-    ax.scatter(df_all.loc[adj_sig_up, 'log2fc'], df_all.loc[adj_sig_up, Y_COL],
-               s=110, color='#C62828', alpha=1.0, linewidths=0.5,
-               edgecolors='#8B0000', marker='*', zorder=5,
-               label=f'Adj. sig. up in spaceflight (adj p<=0.05, |log2FC|>=1; n={n_adj_up})')
-    ax.scatter(df_all.loc[adj_sig_down, 'log2fc'], df_all.loc[adj_sig_down, Y_COL],
-               s=110, color='#1565C0', alpha=1.0, linewidths=0.5,
-               edgecolors='#0D47A1', marker='*', zorder=5,
-               label=f'Adj. sig. down in spaceflight (adj p<=0.05, |log2FC|>=1; n={n_adj_down})')
-
-    ax.axhline(-np.log10(NOM_THR), color='#9E9E9E', lw=1.0, ls='--', alpha=0.7,
-               label=f'Nominal p = {NOM_THR}')
-    ax.axvline( FC_THR, color='#9E9E9E', lw=1.0, ls=':', alpha=0.7)
-    ax.axvline(-FC_THR, color='#9E9E9E', lw=1.0, ls=':', alpha=0.7)
-    ax.set_xlabel(X_LABEL, fontsize=12)
-    ax.set_ylabel(Y_LABEL, fontsize=12)
-
-def label_points(ax, d, fontsize=8, connector=True):
-    """Place gene-name labels (adjustText if available) with connector lines."""
-    if len(d) == 0:
-        return
-    texts, coords = [], []
-    for _, row in d.iterrows():
-        txt = ax.text(row['log2fc'], row[Y_COL], row['label'],
-                      fontsize=fontsize, ha='center', va='center',
-                      color='#111111', fontweight='bold', zorder=8, clip_on=False,
-                      bbox=dict(boxstyle='round,pad=0.15', fc='white', ec='none', alpha=0.85))
-        texts.append(txt)
-        coords.append((row['log2fc'], row[Y_COL]))
-    try:
-        from adjustText import adjust_text
-        adjust_text(texts, ax=ax,
-                    x=d['log2fc'].values, y=d[Y_COL].values,
-                    force_text=(0.5, 1.0), force_static=(0.15, 0.3),
-                    force_pull=(0.01, 0.02), force_explode=(3.0, 5.0),
-                    expand=(1.4, 2.0), max_move=(300, 300), iter_lim=1000,
-                    min_arrow_len=99999)
-    except ImportError:
-        for txt in texts:
-            x0, y0 = txt.get_position()
-            txt.set_position((x0, y0 + 0.25))
-    if connector:
-        for txt, (px, py) in zip(texts, coords):
-            lx, ly = txt.get_position()
-            if np.hypot(lx - px, ly - py) > 0.08:
-                ax.annotate('', xy=(px, py), xytext=(lx, ly),
-                            xycoords='data', textcoords='data', zorder=6,
-                            arrowprops=dict(arrowstyle='-', color='#555555',
-                                            lw=0.8, shrinkA=4, shrinkB=4))
+# legend counts (over all tested genes) handed to the shared panel drawer
+COUNTS = {'n_nom_up': n_nom_up, 'n_nom_down': n_nom_down,
+          'n_adj_up': n_adj_up, 'n_adj_down': n_adj_down}
+assert COUNTS == srep_panels.volcano_counts(df_all)
 
 def select_annotation(requested):
     """
@@ -299,36 +214,19 @@ def add_adj_sig_labels(d):
     extra = extra[~extra['label'].isin(d['label'])]
     return pd.concat([d, extra], ignore_index=True)
 
-def y_top(pad_top=1.15):
-    """Upper y-limit: quantile-based, but always including the most significant gene."""
-    return max(df_all[Y_COL].quantile(0.9998) * pad_top, df_all[Y_COL].max() * 1.10)
-
-def xy_limits(ax, pad_x=0.4, pad_top=1.15):
-    ax.set_xlim(df_all['log2fc'].quantile(0.001) - pad_x,
-                df_all['log2fc'].quantile(0.999) + pad_x)
-    ax.set_ylim(-0.2, y_top(pad_top))
-
-def finish(ax, title_second_line=None, legend_loc='upper right', legend_fs=7.5):
-    title = TITLE_MAIN if title_second_line is None else f'{TITLE_MAIN}\n{title_second_line}'
-    ax.set_title(title, fontsize=11, fontweight='bold', pad=14)
-    leg = ax.legend(fontsize=legend_fs, frameon=True, framealpha=0.92,
-                    edgecolor='#cccccc', loc=legend_loc, ncol=1,
-                    title=LEGEND_NOTE, title_fontsize=legend_fs - 0.5)
-    leg._legend_box.align = 'left'
+def draw_annotated(df_points, df_labels, base):
+    """Shared 90 x 85 mm volcano: annotated genes as orange circles (1 pt black edge),
+    the df_labels subset labelled in italics by adjustText with 1 pt leader lines."""
+    srep_panels.volcano_panel(df_all, 'volcano_supp', TITLE_MAIN,
+                              label_genes=df_labels.rename(columns={'label': 'display'}),
+                              highlight_genes=df_points, out_base=base, counts=COUNTS)
 
 # ──────────────────────────────────────────────────────────────────
-# 6a. Volcano plot (adjusted-significant gene labelled)
+# 6a. Volcano plot (no gene labels)
 # ──────────────────────────────────────────────────────────────────
 print("\nPreparing volcano plot …")
-fig, ax = plt.subplots(figsize=(9, 7.5))
-draw_volcano_layers(ax)
-xy_limits(ax)
-label_points(ax, add_adj_sig_labels(pd.DataFrame()), fontsize=9)
-finish(ax)
-volcano_path = 'OSD352_Volcano_plot.png'
-plt.savefig(volcano_path, dpi=300, bbox_inches='tight')
-plt.close()
-print(f"Saved → {volcano_path}")
+srep_panels.volcano_panel(df_all, 'volcano_supp', TITLE_MAIN, label_genes=None,
+                          highlight_genes=None, out_base='OSD352_Volcano_plot', counts=COUNTS)
 
 # ──────────────────────────────────────────────────────────────────
 # 6b. Volcano plot with the OSD-352-specific curated gene annotations
@@ -348,21 +246,17 @@ print(f"Found {len(df_annot)} annotation genes (incl. adjusted-significant) in D
 for r in df_annot.sort_values('pval').itertuples():
     print(f"  {r.label:<8s} {r.ENSEMBL}  log2FC={r.log2fc:+.3f}  p={r.pval:.4g}  adj p={r.adjpval:.3g}")
 
-fig, ax = plt.subplots(figsize=(14, 11))
-draw_volcano_layers(ax)
-ax.scatter(df_annot['log2fc'], df_annot[Y_COL],
-           s=60, color='#FF6F00', alpha=1.0, linewidths=0.8,
-           edgecolors='#E65100', zorder=6,
-           label=f'Annotated genes ({len(df_annot)})')
-ax.set_xlim(df_all['log2fc'].quantile(0.001) - 2.5, df_all['log2fc'].quantile(0.999) + 1.5)
-ax.set_ylim(-0.2, y_top(1.15 * 1.12))
-label_points(ax, df_annot, fontsize=8)
-finish(ax, title_second_line='Curated OSD-352 gene annotations',
-       legend_loc='upper left', legend_fs=10)
-annot_volcano_path = 'OSD352_Volcano_plot_annotated.png'
-plt.savefig(annot_volcano_path, dpi=300, bbox_inches='tight')
-plt.close()
-print(f"Saved → {annot_volcano_path}")
+# At 90 x 85 mm not every annotated gene can carry a label.  All annotated genes are
+# still drawn (orange); labels are drawn for the genes discussed in the text plus the
+# well-separated remainder, so that no label overlaps another.
+MUST_LABEL = ['Tcf7l1', 'Rac2', 'Itga2', 'Cpt1b', 'Hpdl', 'Bbox1', 'Pask', 'Sdc4']
+EXTRA_LABEL = ['Psd4', 'Osgin1', 'Myo5c', 'Adora2a', 'Agt', 'Gcat']
+df_lab = df_annot[df_annot['label'].isin(MUST_LABEL + EXTRA_LABEL)]
+missing_must = sorted(set(MUST_LABEL) - set(df_lab['label']))
+if missing_must:
+    print(f"  [WARN] required labels not found in the DE table: {missing_must}")
+
+draw_annotated(df_annot, df_lab, 'OSD352_Volcano_plot_annotated')
 
 # ──────────────────────────────────────────────────────────────────
 # 6c. Volcano plot with mitochondrial / cytoskeletal gene annotations
@@ -375,29 +269,25 @@ annotation_genes_v2 = [
     "Itga2", "Lpl", "Myh7b", "Rac2", "Rhof", "S100a4", "S100a8",
     "Smtnl2", "Timp1", "Tmsb4x", "Tnni2", "Wdr1", "Wnt7a", "Zfas1",
     "Mrps25", "Chchd1", "Rmrp", "Ndufb4|Ndufb4c|Ndufb4b", "Ndufaf6",
-    "Atp5mk|Gm35857", "Pet100", "COX2|mt-Co2",
+    "Atp5mk|Gm35857", "Pet100", "mt-Co2|COX2",   # displayed as mt-Co2 (as in OSD-562 / OSD-564)
 ]
 
 df_annot_v2, missing_v2 = select_annotation(annotation_genes_v2)
 df_annot_v2 = add_adj_sig_labels(df_annot_v2)
 print(f"Found {len(df_annot_v2)} annotation genes (incl. adjusted-significant) in DE data; "
       f"missing: {missing_v2 if missing_v2 else 'none'}")
+for r in df_annot_v2.sort_values('pval').itertuples():
+    print(f"  {r.label:<8s} {r.ENSEMBL}  log2FC={r.log2fc:+.3f}  p={r.pval:.4g}  adj p={r.adjpval:.3g}")
 
-fig, ax = plt.subplots(figsize=(14, 11))
-draw_volcano_layers(ax)
-ax.scatter(df_annot_v2['log2fc'], df_annot_v2[Y_COL],
-           s=60, color='#FF6F00', alpha=1.0, linewidths=0.8,
-           edgecolors='#E65100', zorder=6,
-           label=f'Annotated genes ({len(df_annot_v2)})')
-ax.set_xlim(df_all['log2fc'].quantile(0.001) - 2.5, df_all['log2fc'].quantile(0.999) + 1.5)
-ax.set_ylim(-0.2, y_top(1.15 * 1.12))
-label_points(ax, df_annot_v2, fontsize=8)
-finish(ax, title_second_line='Mitochondrial / cytoskeletal gene annotations',
-       legend_loc='upper left', legend_fs=10)
-annot_volcano_v2_path = 'OSD352_Volcano_plot_annotated_mito_cyto.png'
-plt.savefig(annot_volcano_v2_path, dpi=300, bbox_inches='tight')
-plt.close()
-print(f"Saved → {annot_volcano_v2_path}")
+# Labels: the adjusted-significant gene, every mitochondrial gene of the list, and the
+# cytoskeletal / annotated genes that pass p <= 0.05 and |log2FC| >= 1 (the rest stay
+# as unlabelled orange points to avoid overlapping text at 90 x 85 mm).
+MITO_LABELS = ['Mrps25', 'Chchd1', 'Rmrp', 'Ndufb4', 'Ndufaf6', 'Atp5mk', 'Pet100', 'mt-Co2']
+sig_v2 = (df_annot_v2['pval'] <= NOM_THR) & (df_annot_v2['log2fc'].abs() >= FC_THR)
+df_lab_v2 = df_annot_v2[sig_v2 | df_annot_v2['label'].isin(MITO_LABELS + ['Tcf7l1'])]
+print(f"  Labelled: {', '.join(df_lab_v2['label'])}")
+
+draw_annotated(df_annot_v2, df_lab_v2, 'OSD352_Volcano_plot_annotated_mito_cyto')
 
 # ──────────────────────────────────────────────────────────────────
 # 7.  Spreadsheet of significant genes (symbol-deduplicated table)

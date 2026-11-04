@@ -1,12 +1,20 @@
 # CA3_panels – regenerated spatial panels (Fig 2c, 3c, 4c)
 
-Everything in this folder was produced by two scripts, run in this order:
+Everything in this folder was produced by three scripts, run in this order:
 
 1. `extract_spatial_data.R` (R 4.6.1, base R + `Matrix`; **no Seurat / STutility**) –
    reads `../RR3-brain_ST_final_object.rds` once and writes `spots.csv`, `expr.csv`,
    `structure_report.txt`, `small_pieces.rds` (~0.3 min, ~6 GB RAM).
-2. `plot_CA3_panels.py` (`/opt/anaconda3/bin/python3`, pandas/numpy/matplotlib/scipy) –
-   builds the figures and the statistics tables from those CSVs.
+2. `plot_CA3_panels.py` (`/opt/anaconda3/bin/python3`, pandas/numpy/matplotlib/scipy/shapely) –
+   builds the three-row CA3 figures, the raw-means figures and the statistics tables from
+   those CSVs.
+3. `plot_whole_section_maps.py` (same interpreter) – builds the main-text whole-section maps.
+
+Both Python scripts import the shared style module `srep_style.py` (`srep.apply()` right after
+`import matplotlib`; `srep.figsize_mm()` for the panel sizes, `srep.sentence_case()`,
+`srep.fmt_int()`, `srep.save()`), which enforces the Scientific Reports figure rules listed in
+the section "Figure style (Scientific Reports)" below. The figures produced before this
+restyling are kept in `_pre_srep_style/`.
 
 ## Data source and extraction route
 
@@ -55,34 +63,73 @@ cluster-8 statistics are in `CA3_cluster8_per_section_stats.csv`.)
 Each figure = one column per gene (gene name in the header), three rows:
 
 1. **Whole section** – all spots of the section as circles (~0.9 x spot pitch), colour =
-   SCT `data` value, **rescaled within each section from 0 (white/faint pink) to that section's
-   99th percentile of all spots (dark red)**, values above the 99th percentile saturate.
-   Cluster-8 spots have a thin black outline. Each map is labelled with the animal ID and the
-   section's median number of detected genes per spot. All maps share the same pixel scale
-   (1623 x 1623 px window centred on the section).
+   SCT `data` value, **rescaled within each section from 0 (light grey) to that section's
+   99th percentile of all spots (dark red)**, values above the 99th percentile saturate
+   (grey-to-red colour map; colour-bar ticks "Low" = 0, "High" = the section's 99th
+   percentile). The CA3 region (cluster 8) is outlined with a 1 pt black boundary line (the
+   union of discs of radius 0.58 x spot pitch around the cluster-8 spots, lightly smoothed;
+   isolated single cluster-8 spots therefore appear as small filled black dots). Each map is
+   labelled with the animal ID and the section's median number of detected genes per spot.
+   All maps share the same pixel scale (1623 x 1623 px window centred on the section) and
+   the bottom-left section of every block carries a 1 mm scale bar.
 2. **CA3 only** – identical layout, identical per-section colour scale; only cluster-8 spots
-   are coloured (thin black outline), every other spot is light grey. Label gives the number
-   of cluster-8 spots in that section.
-3. **Per-animal CDR-adjusted CA3 mean** – one point per animal (flight red, ground blue);
-   horizontal bar = mean of the three animals. Computed from **all cluster-8 spots of all 12
+   are coloured (same 1 pt boundary line), every other spot is light grey. Label gives the
+   number of cluster-8 spots in that section. Same scale bar.
+3. **Per-animal CDR-adjusted CA3 mean** – one point per animal (flight red, ground blue,
+   labelled F1–F3 / G1–G3); next to the points, mean +/- SD across the three animals of the
+   group as an error bar (1 pt line, 1 pt caps) with the mean as a short horizontal tick.
+   The y axis always starts at 0. Computed from **all cluster-8 spots of all 12
    sections (both sections of each animal pooled)**: cellular detection rate
    CDR = nFeature_SCT / 14 630 (fraction of SCT genes detected in the spot), z-scored across the
    1512 cluster-8 spots; ordinary least squares `SCT_data ~ 1 + cdr_z`; adjusted expression per
    spot = residual + intercept; then averaged per animal (CF1 283 spots, CF2 140, CF7 189, CG7
    242, CG8 184, CG9 474). The title gives the MAST coefficient and FDR from Masarapu et al.
    (spot-level MAST hurdle model with CDR covariate and sample as random effect). These
-   statistics are NOT recomputed here; the adjusted means are descriptive only, and the
-   figure footnote says so.
+   statistics are NOT recomputed here; the adjusted means are descriptive only (this has to
+   be said in the figure legend: the in-figure footnotes were removed).
    The unadjusted means are kept in the supplementary `Fig*_CA3_raw_means.png/.pdf`
-   (top row: the single section per animal drawn in the maps; bottom row: both sections pooled).
+   (top row: the single section per animal drawn in the maps; bottom row: both sections
+   pooled), drawn the same way (points, mean +/- SD error bar, y axis from 0).
 
-Shared colour bar: "Low (0)" to "High (section 99th pct.)".
-Figure size: 60 mm per gene column + 14 mm margin (Fig2c/Fig3c = 194 x 252 mm, Fig4c =
-134 x 270 mm); fonts 5.5–9 pt; PNG and PDF at 300 dpi; scatter layers are rasterised in the
-PDF, text stays vector (fonttype 42).
+Shared colour bar: one label line "SCT log-normalized expression (scaled within each section)",
+ticks "Low" (0) and "High" (the section's 99th percentile).
+Panel sizes (from `srep_style.PANEL_MM`, placed 1:1 by the assembly script): three-row CA3
+figures `ca3_3` = 183 x 235 mm (Fig2c, Fig3c) and `ca3_2` = 122 x 235 mm (Fig4c); raw-means
+figures `raw_means3` = 183 x 90 mm and `raw_means2` = 122 x 90 mm; whole-section maps `maps3` =
+183 x 112 mm and `maps2` = 122 x 105 mm. PNG at 300 dpi and vector PDF (scatter layers
+rasterised, text vector, fonts embedded as Type 42). Panel letters are NOT drawn; the assembly
+script adds them.
+
+## Figure style (Scientific Reports) – definitions for the legends / methods
+
+* **Font**: Arial, 8 pt, for every piece of lettering (gene names in italic, nothing in bold).
+  All lettering in sentence case.
+* **Lines**: nothing thinner than 1 pt (CA3 boundary line, axis spines, colour-bar outline,
+  error-bar lines and caps, separators between gene blocks all 1.0 pt; scale bar 1.5 pt).
+* **Scale bar**: 1 mm, drawn as a black bar with "1 mm" written directly above it, below the
+  bottom-left section of every gene block (the F3 / CF7 section), outside the tissue. Visium
+  spots are 100 um centre-to-centre; the median nearest-neighbour spot spacing in the
+  STutility image coordinates (`nn_px`) is 23.95 px, so 1 mm = 10 x nn_px = 239.5 px. All
+  sections of a figure share the same data window (1623 x 1623 px) and axes size, i.e. **all
+  sections are drawn at the same scale**, so one bar per gene block applies to every section
+  (the legend can say "scale bar, 1 mm; all sections at the same scale").
+* **Error bars**: mean +/- SD across the three animals per group (**n = 3 animals per group**;
+  flight CF1, CF2, CF7; ground CG7, CG8, CG9), drawn next to the individual animal points; the
+  short horizontal tick is the mean. Quantitative y axes start at 0 (never truncated). The SD
+  values are printed by `plot_CA3_panels.py` ("Mean +/- SD across the three animals per group")
+  and are in `plot_log.txt`.
+* **MAST annotation**: "MAST coef, FDR" above each quantitative panel = the spot-level MAST
+  mixed-model coefficient / FDR of Masarapu et al. (not recomputed).
+* **Numbers**: thousands separator only for five or more digits (e.g. 29,770 spots, but
+  5471 genes/spot); single space before units (1 mm, 953 genes/spot).
+* **Software** (printed from the environment used to make the figures): Python 3.13.5,
+  matplotlib 3.10.0, pandas 2.3.2, numpy 2.4.6, scipy 1.15.3, shapely 2.1.2 (CA3 boundary
+  polygon); extraction from the Seurat object with R 4.6.1 (base R + `Matrix`).
 
 ## Outputs
 
+* `Fig2c_Pink1_Snph_Itpr1_maps.png / .pdf`, `Fig3c_Rhob_Sec14l1_Ubl3_maps.png / .pdf`,
+  `Fig4c_Arpc2_Arap2_maps.png / .pdf` – main-text whole-section maps (`plot_whole_section_maps.py`).
 * `Fig2c_Pink1_Snph_Itpr1_CA3.png / .pdf`
 * `Fig3c_Rhob_Sec14l1_Ubl3_CA3.png / .pdf`
 * `Fig4c_Arpc2_Arap2_CA3.png / .pdf`
@@ -153,10 +200,11 @@ unadjusted and depth-sensitive, but it also goes the same way as MAST for all ei
 (lower in flight for Pink1 and Snph, higher for the other six).
 
 Suggested legend wording for the bottom row: "Points, per-animal mean of CDR-adjusted SCT
-log-expression over CA3 (cluster 8) spots, both sections per animal; bar, group mean.
+log-expression over CA3 (cluster 8) spots, both sections per animal; error bar, mean +/- SD
+(n = 3 animals per group).
 CDR-adjusted = residuals from expression ~ cellular detection rate fitted across all CA3 spots;
 descriptive only. Statistics (coef, FDR) are from the spot-level MAST mixed model of Masarapu
 et al."
 
 ## Main-text maps in the original layout (`plot_whole_section_maps.py`)
-`Fig2c_*_maps.png/.pdf`, `Fig3c_*_maps.png/.pdf`, `Fig4c_*_maps.png/.pdf` reproduce the layout of the original `<gene>_spatial_combined` figures (gene columns; Spaceflight | Ground control; three sections each; one Low/High colour bar) with two corrections: colour is rescaled within each section (0 to the section's 99th percentile of SCT log-normalised expression) and the CA3 boundary (cluster-8 spots adjacent to a non-cluster-8 spot) is outlined in black. Sections are one per animal in the fixed order F1 (CF1, 159_C1), F2 (CF2, 158_A1), F3 (CF7, 158_C1) and G1 (CG7, 159_B1), G2 (CG8, 304_C1), G3 (CG9, 304_A1). Use these for the main text; the three-row `*_CA3.png` panels and `*_raw_means.png` go to the supplement.
+`Fig2c_*_maps.png/.pdf`, `Fig3c_*_maps.png/.pdf`, `Fig4c_*_maps.png/.pdf` reproduce the layout of the original `<gene>_spatial_combined` figures (gene columns; Spaceflight | Ground control; three sections each; one Low/High colour bar) with two corrections: colour is rescaled within each section (0 to the section's 99th percentile of SCT log-normalized expression) and the CA3 region (cluster 8) is outlined with a 1 pt black boundary line (same construction as in the three-row figures). Sections are one per animal in the fixed order F1 (CF1, 159_C1), F2 (CF2, 158_A1), F3 (CF7, 158_C1) and G1 (CG7, 159_B1), G2 (CG8, 304_C1), G3 (CG9, 304_A1). Every section is drawn at the same scale; the 1 mm scale bar (239.5 px, see "Figure style") sits below the F3 section of each gene block. The colour bar carries the single label line "Expression (scaled within each section)"; everything else (per-section 99th-percentile scaling, CA3 = ST cluster 8, data source Masarapu et al. 2024, OSD-352) goes into the legend. Sizes: 183 x 112 mm (three genes) and 122 x 105 mm (two genes). Use these for the main text; the three-row `*_CA3.png` panels and `*_raw_means.png` go to the supplement.
