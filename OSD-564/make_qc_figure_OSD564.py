@@ -1,7 +1,7 @@
 """
 OSD-564 RNA-seq QC summary (12 metrics, 10 libraries), Scientific Reports style.
 
-183 x 120 mm, 4 columns x 3 rows of bar panels drawn by the shared srep_panels.qc_grid
+183 x 88 mm, 4 columns x 3 rows (panel a of Supplementary Figure 1; 10 sample IDs need the wider columns) of bar panels drawn by the shared srep_panels.qc_grid
 (identical conventions in OSD-564 / OSD-562 / OSD-352): every y-axis starts at 0,
 8 pt Arial throughout, sample IDs (F1 ... F9, G1 ... G9) as tick labels, 1 pt dashed
 black group-mean lines, one shared legend below the grid, no title line.
@@ -53,4 +53,5 @@ panels = [
 ]
 
 os.makedirs('QC_figures', exist_ok=True)
-srep_panels.qc_grid(df, panels, 'QC_figures/OSD564_QC_summary')
+srep_panels.qc_grid(df, panels, 'QC_figures/OSD564_QC_summary',
+                    n_cols=4, n_rows=3, size_key='qc_4x3')

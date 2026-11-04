@@ -152,7 +152,7 @@ label_df = label_df.rename(columns={'display_label': 'display'})
 # ──────────────────────────────────────────────────────────────────────────────
 # 6. Draw + save (shared 90 x 85 mm volcano panel; curated genes = orange circles)
 # ──────────────────────────────────────────────────────────────────────────────
-srep_panels.volcano_panel(df_v, 'volcano_supp', DATASET_LINE, label_genes=label_df,
+srep_panels.volcano_panel(df_v, 'volcano', DATASET_LINE, label_genes=label_df,
                           highlight_genes=df_annot, out_base='OSD562_Volcano_custom_genes',
                           counts=COUNTS)
 

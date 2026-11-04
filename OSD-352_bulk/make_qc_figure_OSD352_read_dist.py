@@ -3,7 +3,7 @@ OSD-352 (RR-3 whole-brain bulk RNA-seq) RSeQC read-distribution QC summary,
 FLT (n = 3) vs GC (n = 3).
 
 Drawn by the shared srep_panels.qc_grid (identical conventions in OSD-564 / OSD-562 /
-OSD-352): 183 x 120 mm, 4 x 3 grid (11 metric panels, 12th slot empty), every y-axis
+OSD-352): 183 x 70 mm, 6 x 2 grid (11 metric panels, 12th slot empty; panel c of Supplementary Figure 1), every y-axis
 starts at 0, Arial 8 pt, sample IDs (F1, F2, F7, G7, G8, G9) as tick labels, 1 pt dashed
 black group-mean lines, one shared legend below the grid, no title line.
 Saved as 300 dpi PNG + vector PDF.
@@ -56,4 +56,5 @@ panels = [
 ]
 
 os.makedirs('QC_figures', exist_ok=True)
-srep_panels.qc_grid(df, panels, 'QC_figures/OSD352_read_dist_QC_summary')
+srep_panels.qc_grid(df, panels, 'QC_figures/OSD352_read_dist_QC_summary',
+                    n_cols=6, n_rows=2, size_key='qc_6x2', title_wrap=20)

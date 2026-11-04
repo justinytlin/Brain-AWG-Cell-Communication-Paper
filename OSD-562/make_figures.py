@@ -129,7 +129,7 @@ assert COUNTS == srep_panels.volcano_counts(df_v)
 y_col = '-log10p'
 
 # plain 90 x 85 mm volcano (no gene labels); adjusted entries with n = 0 become a text line
-srep_panels.volcano_panel(df_v, 'volcano_supp', DATASET_LINE, label_genes=None, highlight_genes=None,
+srep_panels.volcano_panel(df_v, 'volcano', DATASET_LINE, label_genes=None, highlight_genes=None,
                           out_base='OSD562_Volcano_plot', counts=COUNTS)
 
 # ──────────────────────────────────────────────────────────────────
@@ -155,7 +155,7 @@ print(f"Found {len(df_annot)} of {len(annotation_genes)} annotation genes; "
 label_df = pd.concat([df_annot, df_adj]).drop_duplicates()
 label_df['display'] = [r['symbol'] if isinstance(r['symbol'], str) else idx
                        for idx, r in label_df.iterrows()]
-srep_panels.volcano_panel(df_v, 'volcano_supp', DATASET_LINE, label_genes=label_df,
+srep_panels.volcano_panel(df_v, 'volcano', DATASET_LINE, label_genes=label_df,
                           highlight_genes=df_annot, out_base='OSD562_Volcano_plot_annotated',
                           counts=COUNTS)
 

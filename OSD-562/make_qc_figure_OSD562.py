@@ -6,7 +6,7 @@ spaceflight (n = 4) vs ground control (n = 3), from the GeneLab QC table
 GLDS-557_rna_seq_qc_metrics_GLbulkRNAseq.csv.
 
 Drawn by the shared srep_panels.qc_grid (identical conventions in OSD-564 / OSD-562 /
-OSD-352): 183 x 120 mm, every y-axis starts at 0, Arial 8 pt, sample IDs (FY3 ... GY10)
+OSD-352): 183 x 70 mm, 6 x 2 grid (panel b of Supplementary Figure 1), every y-axis starts at 0, Arial 8 pt, sample IDs (FY3 ... GY10)
 as tick labels, 1 pt dashed black group-mean lines, one shared legend below the grid,
 no title line.  Saved as 300 dpi PNG + vector PDF.
 """
@@ -54,4 +54,5 @@ panels = [
 ]
 
 os.makedirs('QC_figures', exist_ok=True)
-srep_panels.qc_grid(df, panels, 'QC_figures/OSD562_QC_summary')
+srep_panels.qc_grid(df, panels, 'QC_figures/OSD562_QC_summary',
+                    n_cols=6, n_rows=2, size_key='qc_6x2', title_wrap=20)

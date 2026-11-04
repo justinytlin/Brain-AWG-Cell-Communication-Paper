@@ -217,7 +217,7 @@ def add_adj_sig_labels(d):
 def draw_annotated(df_points, df_labels, base):
     """Shared 90 x 85 mm volcano: annotated genes as orange circles (1 pt black edge),
     the df_labels subset labelled in italics by adjustText with 1 pt leader lines."""
-    srep_panels.volcano_panel(df_all, 'volcano_supp', TITLE_MAIN,
+    srep_panels.volcano_panel(df_all, 'volcano', TITLE_MAIN,
                               label_genes=df_labels.rename(columns={'label': 'display'}),
                               highlight_genes=df_points, out_base=base, counts=COUNTS)
 
@@ -225,7 +225,7 @@ def draw_annotated(df_points, df_labels, base):
 # 6a. Volcano plot (no gene labels)
 # ──────────────────────────────────────────────────────────────────
 print("\nPreparing volcano plot …")
-srep_panels.volcano_panel(df_all, 'volcano_supp', TITLE_MAIN, label_genes=None,
+srep_panels.volcano_panel(df_all, 'volcano', TITLE_MAIN, label_genes=None,
                           highlight_genes=None, out_base='OSD352_Volcano_plot', counts=COUNTS)
 
 # ──────────────────────────────────────────────────────────────────

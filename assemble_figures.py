@@ -49,43 +49,40 @@ FIGURES = {
         ("b", f"{P564}/gprofiler/gprofiler_ORA_TNTs_pathways.png", 93, 0, 90, 65),
         ("c", f"{PST}/Fig4c_Arpc2_Arap2_maps.png", 0, 74, 122, 105),
     ],
-    "Supplementary_Figure_1": [
-        ("a", f"{P564}/OSD564_PCA_plot.png", 0, 0, 60, 60),
-        ("b", f"{P562}/OSD562_PCA_plot.png", 62, 0, 60, 60),
-        ("c", f"{P352}/OSD352_PCA_plot.png", 124, 0, 60, 60),
-        ("d", f"{P564}/QC_figures/OSD564_QC_summary.png", 0, 64, 183, 120),
+    "Supplementary_Figure_1": [          # read-quality metrics, one row of panels per dataset
+        ("a", f"{P564}/QC_figures/OSD564_QC_summary.png", 0, 0, 183, 88),
+        ("b", f"{P562}/QC_figures/OSD562_QC_summary.png", 0, 92, 183, 70),
+        ("c", f"{P352}/QC_figures/OSD352_read_dist_QC_summary.png", 0, 166, 183, 70),
     ],
-    "Supplementary_Figure_2": [
-        ("a", f"{P562}/QC_figures/OSD562_QC_summary.png", 0, 0, 183, 120),
-        ("b", f"{P352}/QC_figures/OSD352_read_dist_QC_summary.png", 0, 123, 183, 120),
+    "Supplementary_Figure_2": [          # same layout as Figure 1, one row per dataset
+        ("a", f"{P562}/OSD562_Volcano_custom_genes.png", 0, 0, 118, 100),
+        ("b", f"{P562}/OSD562_PCA_plot.png", 123, 0, 60, 60),
+        ("c", f"{P352}/OSD352_Volcano_plot_annotated.png", 0, 104, 118, 100),
+        ("d", f"{P352}/OSD352_PCA_plot.png", 123, 104, 60, 60),
     ],
     "Supplementary_Figure_3": [
-        ("a", f"{P562}/OSD562_Volcano_custom_genes.png", 0, 0, 90, 85),
-        ("b", f"{P352}/OSD352_Volcano_plot_annotated.png", 93, 0, 90, 85),
-    ],
-    "Supplementary_Figure_4": [
         ("a", f"{P562}/KEGG_results_OSD562/pathway_figures/GSEA_TNT_NES_summary.png", 0, 0, 90, 60),
         ("b", f"{P562}/KEGG_results_OSD562/pathway_figures/GSEA_sEV_NES_summary.png", 93, 0, 90, 60),
         ("c", f"{P562}/KEGG_results_OSD562/pathway_figures/GSEA_Metabolic_NES_summary.png", 0, 63, 90, 60),
     ],
-    "Supplementary_Figure_5": [
+    "Supplementary_Figure_4": [
         ("a", f"{P352}/KEGG_results_OSD352/pathway_figures/GSEA_TNTs_Factin_NES_summary.png", 0, 0, 90, 60),
         ("b", f"{P352}/KEGG_results_OSD352/pathway_figures/GSEA_sEVs_Docking_NES_summary.png", 93, 0, 90, 60),
         ("c", f"{P352}/GO_BP_results_OSD352/GSEA_Mito_NES_summary.png", 0, 63, 90, 60),
     ],
-    "Supplementary_Figure_6": [
+    "Supplementary_Figure_5": [
         ("a", f"{P564}/KEGG_results/pathway_figures/GSEA_metabolic_adaptation_pathways_NES.png", 0, 0, 90, 60),
         ("b", f"{P564}/GO_results/GSEA_BP_protrusion_exocytosis_NES_barplot.png", 93, 0, 90, 60),
         ("c", f"{P564}/GO_results/GSEA_CC_compartments_NES_barplot.png", 0, 63, 90, 60),
     ],
-    "Supplementary_Figure_7": [("", f"{PST}/Fig2c_Pink1_Snph_Itpr1_CA3.png", 0, 0, 183, 235)],
-    "Supplementary_Figure_8": [("", f"{PST}/Fig3c_Rhob_Sec14l1_Ubl3_CA3.png", 0, 0, 183, 235)],
-    "Supplementary_Figure_9": [("", f"{PST}/Fig4c_Arpc2_Arap2_CA3.png", 0, 0, 122, 235)],
-    "Supplementary_Figure_10": [
+    "Supplementary_Figure_6": [("", f"{PST}/Fig2c_Pink1_Snph_Itpr1_CA3.png", 0, 0, 183, 235)],
+    "Supplementary_Figure_7": [("", f"{PST}/Fig3c_Rhob_Sec14l1_Ubl3_CA3.png", 0, 0, 183, 235)],
+    "Supplementary_Figure_8": [("", f"{PST}/Fig4c_Arpc2_Arap2_CA3.png", 0, 0, 122, 235)],
+    "Supplementary_Figure_9": [
         ("a", f"{PST}/Fig2c_Pink1_Snph_Itpr1_CA3_raw_means.png", 0, 0, 183, 90),
         ("b", f"{PST}/Fig3c_Rhob_Sec14l1_Ubl3_CA3_raw_means.png", 0, 93, 183, 90),
     ],
-    "Supplementary_Figure_11": [("", f"{PST}/Fig4c_Arpc2_Arap2_CA3_raw_means.png", 0, 0, 122, 90)],
+    "Supplementary_Figure_10": [("", f"{PST}/Fig4c_Arpc2_Arap2_CA3_raw_means.png", 0, 0, 122, 90)],
 }
 
 LETTER_GUTTER_MM = 3.0   # each lettered panel is pushed down by this much; the letter sits in the gap above it

@@ -34,6 +34,7 @@ QC       4 x 3 grid of bar panels, every y-axis from 0, 1 pt dashed black group-
          lines, sample IDs as x tick labels, metric titles in sentence case with
          units, one shared frameless legend below the grid, no title line.
 """
+import textwrap
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -432,15 +433,18 @@ def volcano_panel(df, size_key, title, label_genes, highlight_genes, out_base, c
 # ──────────────────────────────────────────────────────────────────
 # C. QC grid (183 x 120 mm, 4 x 3)
 # ──────────────────────────────────────────────────────────────────
-def qc_grid(df, panels, out_base, n_cols=4, n_rows=3):
+def qc_grid(df, panels, out_base, n_cols=4, n_rows=3, size_key='qc', title_wrap=None):
     """
     df     : one row per library, columns 'label' (short sample ID), 'condition'
              ('FLT'/'GC' or 'flight'/'ground'), plus the metric columns; rows in plot order
     panels : list of (column, title with unit, scale_fn or None, integer_axis)
+    size_key : 'qc' (183 x 120 mm, stand-alone 4 x 3), 'qc_4x3' (183 x 88 mm) or 'qc_6x2' (183 x 70 mm);
+               the last two stack three datasets in one 247 mm figure
+    title_wrap : wrap panel titles at this many characters (None = no wrapping)
     """
     keys = [_group_key(c) for c in df['condition']]
     n_f, n_g = keys.count('flight'), keys.count('ground')
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=srep.figsize_mm('qc'), constrained_layout=True)
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=srep.figsize_mm(size_key), constrained_layout=True)
     axes = axes.flatten()
     x = np.arange(len(df))
     bar_w = 0.72
@@ -464,7 +468,10 @@ def qc_grid(df, panels, out_base, n_cols=4, n_rows=3):
         ax.set_xticklabels(df['label'], rotation=90)
         ax.set_xlim(-0.6, len(df) - 0.4)
         ax.tick_params(axis='x', length=0)
-        ax.set_title(srep.sentence_case(title))
+        t = srep.sentence_case(title)
+        if title_wrap:
+            t = textwrap.fill(t, title_wrap)
+        ax.set_title(t)
     for j in range(len(panels), len(axes)):
         axes[j].axis('off')
     handles = [
@@ -474,6 +481,15 @@ def qc_grid(df, panels, out_base, n_cols=4, n_rows=3):
     ]
     fig.legend(handles=handles, loc='outside lower center', ncol=3, frameon=False,
                handlelength=1.2, handletextpad=0.4, columnspacing=1.5)
+    # left-aligned titles can overhang the right-hand column; reserve a right margin for them
+    for _ in range(3):
+        fig.canvas.draw()
+        titles = [ax._left_title if ax._left_title.get_text() else ax.title for ax in axes[:len(panels)]]
+        over = max(t.get_window_extent().x1 for t in titles) - fig.bbox.width
+        if over <= 0:
+            break
+        rect = fig.get_layout_engine().get()['rect']
+        fig.get_layout_engine().set(rect=(0, 0, rect[2] - (over + 2) / fig.bbox.width, 1))
     srep.save(fig, out_base)
     plt.close(fig)
     print(f'Saved -> {out_base}.png / .pdf')

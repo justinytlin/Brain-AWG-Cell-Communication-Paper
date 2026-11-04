@@ -36,7 +36,9 @@ PANEL_MM = {
     "ca3_2":        (122, 235),
     "raw_means3":   (183, 90),
     "raw_means2":   (122, 90),
-    "qc":           (183, 120),  # QC metric grid
+    "qc":           (183, 120),  # QC metric grid, 4 x 3 (stand-alone)
+    "qc_4x3":       (183, 88),   # QC grid, 4 x 3, for 10-sample datasets (sample IDs need >= 3 mm per bar)
+    "qc_6x2":       (183, 70),   # QC grid, 6 x 2, for <= 7-sample datasets; the three grids stack in Supplementary Figure 1
     "volcano_supp": (90, 85),
 }
 
