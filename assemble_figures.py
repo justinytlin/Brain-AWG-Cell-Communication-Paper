@@ -60,29 +60,30 @@ FIGURES = {
         ("c", f"{P352}/OSD352_Volcano_plot_annotated.png", 0, 104, 118, 100),
         ("d", f"{P352}/OSD352_PCA_plot.png", 123, 104, 60, 60),
     ],
+    # Supplementary Figures are numbered in order of first citation in the manuscript (v3):
+    # 3 = OSD-352 bulk GSEA, 4 = extra OSD-564 GSEA, 5 = OSD-562 KEGG GSEA,
+    # 6-8 = CDR-adjusted per-animal CA3 means, 9-11 = unadjusted per-animal CA3 means.
     "Supplementary_Figure_3": [
-        ("a", f"{P562}/KEGG_results_OSD562/pathway_figures/GSEA_TNT_NES_summary.png", 0, 0, 90, 60),
-        ("b", f"{P562}/KEGG_results_OSD562/pathway_figures/GSEA_sEV_NES_summary.png", 93, 0, 90, 60),
-        ("c", f"{P562}/KEGG_results_OSD562/pathway_figures/GSEA_Metabolic_NES_summary.png", 0, 63, 90, 60),
-    ],
-    "Supplementary_Figure_4": [
         ("a", f"{P352}/KEGG_results_OSD352/pathway_figures/GSEA_TNTs_Factin_NES_summary.png", 0, 0, 90, 60),
         ("b", f"{P352}/KEGG_results_OSD352/pathway_figures/GSEA_sEVs_Docking_NES_summary.png", 93, 0, 90, 60),
         ("c", f"{P352}/GO_BP_results_OSD352/GSEA_Mito_NES_summary.png", 0, 63, 90, 60),
     ],
-    "Supplementary_Figure_5": [
+    "Supplementary_Figure_4": [
         ("a", f"{P564}/KEGG_results/pathway_figures/GSEA_metabolic_adaptation_pathways_NES.png", 0, 0, 90, 60),
         ("b", f"{P564}/GO_results/GSEA_BP_protrusion_exocytosis_NES_barplot.png", 93, 0, 90, 60),
         ("c", f"{P564}/GO_results/GSEA_CC_compartments_NES_barplot.png", 0, 63, 90, 60),
     ],
+    "Supplementary_Figure_5": [
+        ("a", f"{P562}/KEGG_results_OSD562/pathway_figures/GSEA_TNT_NES_summary.png", 0, 0, 90, 60),
+        ("b", f"{P562}/KEGG_results_OSD562/pathway_figures/GSEA_sEV_NES_summary.png", 93, 0, 90, 60),
+        ("c", f"{P562}/KEGG_results_OSD562/pathway_figures/GSEA_Metabolic_NES_summary.png", 0, 63, 90, 60),
+    ],
     "Supplementary_Figure_6": [("", f"{PST}/Fig2c_Pink1_Snph_Itpr1_CA3.png", 0, 0, 183, 235)],
     "Supplementary_Figure_7": [("", f"{PST}/Fig3c_Rhob_Sec14l1_Ubl3_CA3.png", 0, 0, 183, 235)],
     "Supplementary_Figure_8": [("", f"{PST}/Fig4c_Arpc2_Arap2_CA3.png", 0, 0, 122, 235)],
-    "Supplementary_Figure_9": [
-        ("a", f"{PST}/Fig2c_Pink1_Snph_Itpr1_CA3_raw_means.png", 0, 0, 183, 90),
-        ("b", f"{PST}/Fig3c_Rhob_Sec14l1_Ubl3_CA3_raw_means.png", 0, 93, 183, 90),
-    ],
-    "Supplementary_Figure_10": [("", f"{PST}/Fig4c_Arpc2_Arap2_CA3_raw_means.png", 0, 0, 122, 90)],
+    "Supplementary_Figure_9": [("", f"{PST}/Fig2c_Pink1_Snph_Itpr1_CA3_raw_means.png", 0, 0, 183, 90)],
+    "Supplementary_Figure_10": [("", f"{PST}/Fig3c_Rhob_Sec14l1_Ubl3_CA3_raw_means.png", 0, 0, 183, 90)],
+    "Supplementary_Figure_11": [("", f"{PST}/Fig4c_Arpc2_Arap2_CA3_raw_means.png", 0, 0, 122, 90)],
 }
 
 LETTER_GUTTER_MM = 3.0   # each lettered panel is pushed down by this much; the letter sits in the gap above it

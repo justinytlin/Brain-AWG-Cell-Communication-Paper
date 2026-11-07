@@ -13,3 +13,5 @@ __pycache__/
 GeneLab_counts_download/
 !Figures_SciRep/
 !Figures_SciRep/*.png
+!Tables/
+!Tables/*.xlsx
