@@ -14,6 +14,7 @@ Analysis code for *Short-Duration Spaceflight Alters Cellular Transport Pathways
 - OSD-562 counts: `GLDS-557_rna_seq_RSEM_Unnormalized_Counts_rRNArm_GLbulkRNAseq.csv` from OSDR (place in `OSD-562/GeneLab_counts_download/`); `rerun_deseq2_OSD562.py --source star` alternatively rebuilds the matrix from the per-sample RSEM files plus the GENCODE vM37 GTF, giving identical counts
 - Spatial object `RR3-brain_ST_final_object.rds`: Mendeley Data doi 10.17632/fjxrcbh672.1 (Masarapu et al. 2024, Nat Commun 15:4778); DE statistics from its Supplementary Data 8 (`41467_2024_48916_MOESM11_ESM.xlsx`, CC BY 4.0)
 - Per-sample QC: `GLDS-569`, `GLDS-557` and `GLDS-352_rna_seq_qc_metrics_GLbulkRNAseq.csv` from OSDR
+- g:Profiler exports (`OSD-564/gprofiler/`): the first line of each says "Raw DEGs p<0.05", but the queries were the GeneLab adjusted p < 0.05 gene lists (any fold change): every intersection gene has adjusted p < 0.05. `table_s4()` in `build_supplementary_tables.py` reads them and rebuilds the input lists from `GLDS-569_rna_seq_differential_expression_rRNArm_GLbulkRNAseq.csv` (note: GeneLab's log2FC column there is ground control / flight)
 
 ## Environment
 - Python 3 with pandas, numpy, matplotlib, scikit-learn, gseapy 1.3.0, openpyxl, adjustText
@@ -57,7 +58,7 @@ Built by `build_supplementary_tables.py` (run from the project root, like `assem
 | `Supplementary_Table_S1_OSD-562_DE.xlsx` | OSD-562 re-derived DESeq2 (4 vs 3): 45 curated genes and all 28,398 genes |
 | `Supplementary_Table_S2_OSD-352_bulk_DE.xlsx` | OSD-352 whole-brain GeneLab DESeq2 (3 vs 3): 24 curated genes and all genes |
 | `Supplementary_Table_S3_GSEA.xlsx` | Complete GSEApy prerank results, one sheet per dataset and library, with the figure/table each displayed term appears in |
-| `Supplementary_Table_S4` | **Not yet included**: g:Profiler ORA for OSD-564, pending re-run on the adjusted-p < 0.05 gene lists |
+| `Supplementary_Table_S4_OSD-564_gProfiler_ORA.xlsx` | Complete g:Profiler ORA for OSD-564: all terms at g:SCS-adjusted p < 0.05 for genes up and down in spaceflight, with the figure/table each displayed term appears in, and the input gene lists (adjusted p < 0.05, any fold change; 437 up, 807 down) |
 | `Supplementary_Table_S5_OSD-352_spatial.xlsx` | 25 hippocampal spatial DEGs from Masarapu et al. 2024 Supplementary Data 8, and per-animal CA3 means |
 | `Supplementary_Table_S6_curated_lists_DRAFT.xlsx` | Curated genes and pathways with categories and placement; rationale and references still to be written |
 | `Supplementary_Table_S7_sample_QC.xlsx` | Per-sample RIN, read depth, mapping, rRNA and genes detected; OSD-562 7SL/7SK fraction |

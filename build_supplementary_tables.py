@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
 Build the manuscript's main Tables 1-6 (Excel export of the tables in the revised manuscript)
-and Supplementary Tables S1, S2, S3, S5, S6 (draft) and S7 from the result files.
+and Supplementary Tables S1-S5, S6 (draft) and S7 from the result files.
 
-S4 (g:Profiler ORA) is NOT built here: the existing g:Profiler exports were run on raw-p < 0.05
-gene lists, while the Methods specify adjusted p < 0.05. S4 must be built after the re-run.
+S4 (g:Profiler ORA) uses the existing exports in the OSD-564 gprofiler/ folder. Their titles say "Raw DEGs
+p<0.05", but every intersection gene has adjusted p < 0.05 (any fold change), so the input matches
+the Methods; the title text is a mislabel.
 
 Run from the project root:  /opt/anaconda3/bin/python3 build_supplementary_tables.py
 Outputs go to Tables/.
@@ -23,7 +24,8 @@ P564 = os.path.join(ROOT, "OSD-564 Figures")
 P562 = os.path.join(ROOT, "OSD-562 Figures")
 P352 = os.path.join(ROOT, "OSD-352", "NEW FIGURES")
 PST = os.path.join(ROOT, "OSD-352", "NASA_RR3_Brain-main", "manuscript_plots", "CA3_panels")
-MANUSCRIPT = os.path.join(ROOT, "Paper REVISED v3 (clean).docx")
+MANUSCRIPT_NAME = "Paper REVISED v4 (clean).docx"
+MANUSCRIPT = os.path.join(ROOT, MANUSCRIPT_NAME)
 MASARAPU_SD8 = os.path.expanduser("~/Downloads/41467_2024_48916_MOESM11_ESM.xlsx")
 
 FC_THR, P_THR = 1.0, 0.05
@@ -107,8 +109,7 @@ def main_tables():
         rows = [[cell_text(c) for c in r.cells] for r in t.rows]
         sheets.append((name, pd.DataFrame(rows[1:], columns=rows[0])))
     leg_rows = [(f"Table {i + 1}", leg) for i, leg in enumerate(legends)]
-    leg_rows.append(("Note", "Exported from 'Paper REVISED v3 (clean).docx'. Table 4 (g:Profiler) will change "
-                             "when g:Profiler is re-run on the adjusted-p < 0.05 gene lists stated in the Methods."))
+    leg_rows.append(("Note", f"Exported from '{MANUSCRIPT_NAME}'."))
     write_book(os.path.join(OUT, "Main_Tables_1-6.xlsx"), [("Legends", readme_df(leg_rows))] + sheets)
 
 
@@ -307,6 +308,93 @@ def table_s3():
 
 
 # ══════════════════════════════════════════════════════════════════
+# S4  g:Profiler over-representation analysis, OSD-564
+# ══════════════════════════════════════════════════════════════════
+GPROF = os.path.join(P564, "gprofiler", "Supplemental DEG Tables (OSD-562, OSD-564, OSD-352) - OSD-564 g_Profiler {}.csv")
+GPROF_SOURCES = ["GO:BP", "GO:CC", "GO:MF", "KEGG", "REAC", "WP", "TF", "MIRNA", "HPA", "CORUM", "HP"]
+# Terms drawn in the ORA figure panels (make_gprofiler_ORA_figures_OSD564.py); all of them are in Table 4.
+ORA_SHOWN = {
+    "down": {**{t: "Fig. 2b" for t in ["GO:0005740", "GO:0005743", "GO:0006119", "GO:0033108", "GO:0009060",
+                                       "GO:0042775", "GO:0033617", "GO:0042776", "GO:0032981"]},
+             **{t: "Fig. 4b" for t in ["GO:0022626", "KEGG:03010", "GO:0140241"]}},
+    "up": {**{t: "Fig. 3b" for t in ["GO:0016192", "GO:0045055", "GO:0016050", "GO:0043230", "GO:0051648",
+                                     "GO:0072659"]},
+           **{t: "Fig. 4b" for t in ["GO:0007267", "GO:0046907", "GO:0031267", "GO:0120036", "GO:0030036"]}},
+}
+
+
+def read_gprofiler(which):
+    raw = pd.read_csv(GPROF.format(which), header=None, dtype=str)
+    hdr = next(i for i in range(10) if "term_id" in raw.iloc[i].tolist())
+    return pd.read_csv(GPROF.format(which), header=hdr)
+
+
+def table_s4():
+    de = pd.read_csv(os.path.join(P564, "GLDS-569_rna_seq_differential_expression_rRNArm_GLbulkRNAseq.csv"))
+    fc = "Log2fc_(Ground Control)v(Space Flight)"            # GeneLab contrast is GC/FLT: flip the sign
+    p, q = fc.replace("Log2fc_", "P.value_"), fc.replace("Log2fc_", "Adj.p.value_")
+    de["log2FC"] = -de[fc]
+    sel = de[de[q] < P_THR].copy()
+    sel["Direction"] = np.where(sel["log2FC"] > 0, "Up in spaceflight", "Down in spaceflight")
+    genes = (sel.rename(columns={"ENSEMBL": "Ensembl ID", "SYMBOL": "Gene", p: "p", q: "Adjusted p",
+                                 "log2FC": "log2FC (FLT/GC)"})
+             [["Direction", "Ensembl ID", "Gene", "log2FC (FLT/GC)", "p", "Adjusted p"]]
+             .sort_values(["Direction", "Adjusted p"], ascending=[False, True]))
+    n_up, n_dn = (genes.Direction == "Up in spaceflight").sum(), (genes.Direction == "Down in spaceflight").sum()
+    # g:Profiler reports human-style upper-case symbols; restore mouse capitalisation from the DE table
+    case = dict(zip(de["SYMBOL"].dropna().str.upper(), de["SYMBOL"].dropna()))
+    sheets, counts = [], []
+    for which, key, label in [("Upregulated Pathways", "up", "Up in spaceflight"),
+                              ("Downregulated Pathways", "down", "Down in spaceflight")]:
+        g = read_gprofiler(which)
+        padj = g["adjusted_p_value"]
+        assert np.allclose(10 ** -g["negative_log10_of_adjusted_p_value"], padj, rtol=5e-3), which
+        assert (padj < 0.05).all()
+        shown = g["term_id"].map(ORA_SHOWN[key])
+        out = pd.DataFrame({
+            "Source": g["source"], "Term ID": g["term_id"], "Term name": g["term_name"],
+            "Adjusted p (g:SCS)": padj, "−log10 adjusted p": g["negative_log10_of_adjusted_p_value"].round(2),
+            "Term size": g["term_size"], "Query size": g["query_size"], "Intersection size": g["intersection_size"],
+            "Effective domain size": g["effective_domain_size"],
+            "Driver term": np.where(g["highlighted"].astype(str).str.lower() == "true", "Yes", ""),
+            "Shown in": np.where(shown.notna(), shown.fillna("") + "; Table 4", ""),
+            "Intersection genes": g["intersections"].fillna("").map(
+                lambda s: ", ".join(case.get(x, x) for x in s.split(",") if x)),
+        })
+        out["_src"] = out["Source"].map({s: i for i, s in enumerate(GPROF_SOURCES)}).fillna(99)
+        out = out.sort_values(["_src", "Adjusted p (g:SCS)"]).drop(columns="_src")
+        assert (out["Shown in"] != "").sum() == len(ORA_SHOWN[key]), "a figure term is missing from the export"
+        sheets.append((label, out))
+        counts.append(f"{label}: {len(out)} terms (" +
+                      ", ".join(f"{s} {n}" for s, n in out["Source"].value_counts().reindex(GPROF_SOURCES).dropna().astype(int).items()) + ")")
+    readme = readme_df([
+        ("Contents", "Complete g:Profiler g:GOSt over-representation results for OSD-564 hippocampus (spaceflight vs "
+                     "ground control): every term with g:SCS-adjusted p < 0.05, run separately for genes up- and "
+                     "downregulated in spaceflight. Table 4 and Figures 2b, 3b and 4b show curated subsets."),
+        ("Input genes", f"GeneLab DESeq2 results for GLDS-569 (rRNA-removed; n = 5 FLT vs 5 GC): genes with "
+                        f"adjusted p < 0.05, any fold change, split by direction in spaceflight ({n_up} up, {n_dn} down; "
+                        f"sheet 'Input genes'). Genes without a g:Profiler annotation in a source do not count "
+                        f"towards that source's query size."),
+        ("Settings", "Organism Mus musculus; statistical domain scope, annotated genes only; significance threshold, "
+                     "g:SCS 0.05; data sources as listed in the Methods. Sources with significant terms: "
+                     "GO:BP, GO:CC and GO:MF (Gene Ontology), KEGG, REAC (Reactome), WP (WikiPathways), "
+                     "TF (TRANSFAC motifs), CORUM (protein complexes) and HP (Human Phenotype Ontology)."),
+        ("Adjusted p (g:SCS)", "g:Profiler's multiple-testing-corrected p, as exported. −log10 adjusted p is the "
+                               "value plotted in Figures 2b, 3b and 4b and reported in Table 4."),
+        ("Sizes", "Term size, genes annotated to the term; Query size, input genes annotated in that source; "
+                  "Intersection size, input genes in the term; Effective domain size, annotated genes in the "
+                  "source (the statistical background)."),
+        ("Driver term", "Yes, term highlighted by g:Profiler's driver-term filtering (GO only)."),
+        ("Shown in", "Figure panel and main table in which the term is displayed."),
+        ("Intersection genes", "Input genes annotated to the term. Mouse gene-symbol capitalisation restored from "
+                               "the DE table (g:Profiler returns upper-case symbols)."),
+        ("Sheets", "\n".join(counts)),
+    ])
+    write_book(os.path.join(OUT, "Supplementary_Table_S4_OSD-564_gProfiler_ORA.xlsx"),
+               [("README", readme)] + sheets + [("Input genes", genes)])
+
+
+# ══════════════════════════════════════════════════════════════════
 # S5  OSD-352 spatial DE (Masarapu et al. 2024, Supplementary Data 8) + per-animal CA3
 # ══════════════════════════════════════════════════════════════════
 REGION = {6: "CA1 pyramidal layer", 8: "CA3", 10: "CA1 stratum radiatum", 11: "Dentate gyrus"}
@@ -490,6 +578,7 @@ if __name__ == "__main__":
     s1 = table_s1()
     s2 = table_s2()
     gsea = table_s3()
+    table_s4()
     deg = table_s5()
     table_s6(s1, s2, deg, gsea)
     s7 = table_s7()
